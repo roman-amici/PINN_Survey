@@ -1,0 +1,23 @@
+Type:
+Synthetic
+
+Domain:
+x \in [-1,1]
+t \in [0,1]
+
+Initial Conditions:
+t = 0
+u = sin(\pi x)
+
+Boundary Conditions:
+x = 1
+u = 0
+
+x = -1
+u = 0
+
+Params:
+nu = 0.01 / \pi
+
+Attribution:
+https://github.com/maziarraissi/PINNs
