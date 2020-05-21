@@ -1,3 +1,3 @@
 [submodule "architecture/PINN_Base"]
-	path = architecture/PINN_Base
+	path = PINN_Base
 	url = https://github.com/roman-amici/PINN_Base.git
