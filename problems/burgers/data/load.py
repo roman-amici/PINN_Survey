@@ -3,7 +3,7 @@ import os
 
 
 def load_burgers_grid():
-    path = os.path.abspath(__file__)
+    path = os.path.dirname(os.path.abspath(__file__))
     filename = f"{path}/burgers_shock.mat"
     return util.load_mat_2d(filename, "x", "t", "usol")
 
