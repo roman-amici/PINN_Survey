@@ -1,4 +1,4 @@
-import PINN_Survey.architecture.PINN_Base.util as util
+import PINN_Base.util as util
 import os
 
 

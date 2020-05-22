@@ -17,7 +17,7 @@ class Burgers_Soft_Mesh(Soft_Mesh):
         self.nu = nu
         super().__init__(lower_bound, upper_bound, layers_approx, layers_mesh, **kwargs)
 
-    def _residual(self, u, x, _):
+    def _residual(self, u, x, _=None):
         du = tf.gradients(u, x)[0]
 
         u_x = du[:, 0]
@@ -42,7 +42,7 @@ class Burgers_Domain_Transformer(Domain_Transformer):
         self.nu = nu
         super().__init__(lower_bound, upper_bound, 2, 1, width, depth, **kwargs)
 
-    def _residual(self, u, x, _):
+    def _residual(self, u, x, _=None):
         du = tf.gradients(u, x)[0]
 
         u_x = du[:, 0]

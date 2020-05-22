@@ -1,9 +1,9 @@
 
-import PINN_Survey.architecture.PINN_Base.base_v1 as base_v1
+from PINN_Base.base_v1 import PINN_Base
 import tensorflow as tf
 
 
-class Soft_Mesh(base_v1.PINN_Base):
+class Soft_Mesh(PINN_Base):
 
     def __init__(self,
                  lower_bound,
@@ -37,7 +37,7 @@ class Soft_Mesh(base_v1.PINN_Base):
 
     def _forward(self, X):
 
-        probs, acitvations_probs = self._NN(
+        probs, acitvations_probs = self._forward_mesh(
             X, self.weights_mesh, self.biases_mesh)
 
         basis_functions, activations_basis = self._NN(
@@ -50,11 +50,13 @@ class Soft_Mesh(base_v1.PINN_Base):
             self.activations_basis = activations_basis
 
         # Take the combination of basis functions multiplied by probabilities.
-        return tf.reduce_sum(basis_functions * probs, axis=1)
+        return tf.reduce_sum(basis_functions * probs, axis=1)[:, None]
+
+    def get_output_dim(self):
+        return self.output_dim
 
     def get_probs(self, X):
         return self.sess.run(self.probs, {self.X: X})
 
     def get_basis_functions(self, X):
         return self.sess.run(self.basis_functions, {self.X: X})
-

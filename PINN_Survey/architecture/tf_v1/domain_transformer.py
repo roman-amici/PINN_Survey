@@ -1,4 +1,4 @@
-import PINN_Survey.architecture.PINN_Base.base_v1 as base_v1
+import PINN_Base.base_v1 as base_v1
 import tensorflow as tf
 
 '''
@@ -67,7 +67,7 @@ class Domain_Transformer(base_v1.PINN_Base):
 
         return Y, activations
 
-    def _forward(self, X, return_activations=False):
+    def _forward(self, X):
 
         T1, activations_T1 = self._NN(X, self.weights_T1, self.biases_T2)
         T2, activations_T2 = self._NN(X, self.weights_T2, self.biases_T2)
@@ -76,8 +76,16 @@ class Domain_Transformer(base_v1.PINN_Base):
             X, T1, T2, self.weights, self.biases)
 
         if X == self.X:
+            self.T1 = T1
+            self.T2 = T2
             self.activations = activations
             self.Activations_T1 = activations_T1
             self.Activations_T2 = activations_T2
 
         return U
+
+    def get_T1(self, X):
+        return self.sess.run(self.T1, {self.X: X})
+
+    def get_T2(self, X):
+        return self.sess.run(self.T2, {self.X: X})
