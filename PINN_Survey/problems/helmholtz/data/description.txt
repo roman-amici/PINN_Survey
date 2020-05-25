@@ -1,0 +1,33 @@
+Type:
+Analytic
+
+Solution:
+sin(a*pi*x)*sin(b*pi*y)
+
+Differential Equation:
+\nabla^2 u(x,y) = -(a*pi)**2 * sin(a*pi*x) * sin(b*pi*y) -
+        (b*pi)**2 * sin(a*pi*x)*np.sin(b*pi*y) + 
+
+Domain
+x \in [-1,1]
+y \in [-1,1]
+
+Boundary Conditions:
+x,y = -1
+u = 0
+
+x,y = 1
+u = 0
+
+Params:
+a = 1
+b = 4
+
+Size
+nx = 256
+ny = 256
+
+Layout:
+M[x_i,y_j,0] = x
+M[x_i,y_j,1] = y
+M[x_i,y_j,2] = u
