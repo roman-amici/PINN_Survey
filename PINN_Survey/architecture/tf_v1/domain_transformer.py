@@ -89,3 +89,24 @@ class Domain_Transformer(base_v1.PINN_Base):
 
     def get_T2(self, X):
         return self.sess.run(self.T2, {self.X: X})
+
+    def _count_params(self):
+        params_main = super()._count_params()
+
+        params_T1_weights = self._size_of_variable_list(self.weights_T1)
+        params_T1_biases = self._size_of_variable_list(self.biases_T1)
+
+        params_T2_weights = self._size_of_variable_list(self.weights_T2)
+        params_T2_biases = self._size_of_variable_list(self.biases_T2)
+
+        return params_main + params_T1_weights + params_T1_biases + params_T2_weights + params_T2_biases
+
+    def get_architecture_description(self):
+        params = self._count_params()
+        return {
+            "arch_name": "domain_transformer",
+            "n_params": params,
+            "shape_main": self.layers[:],
+            "shape_T1": [self.input_dim, self.width, self.output_dim],
+            "shape_T2": [self.input_dim, self.width, self.output_dim]
+        }
