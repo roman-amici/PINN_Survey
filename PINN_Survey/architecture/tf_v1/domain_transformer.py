@@ -108,5 +108,6 @@ class Domain_Transformer(base_v1.PINN_Base):
             "n_params": params,
             "shape_main": self.layers[:],
             "shape_T1": [self.input_dim, self.width, self.output_dim],
-            "shape_T2": [self.input_dim, self.width, self.output_dim]
+            "shape_T2": [self.input_dim, self.width, self.output_dim],
+            "dtype": "float32" if self.dtype == tf.float32 else "float64"
         }

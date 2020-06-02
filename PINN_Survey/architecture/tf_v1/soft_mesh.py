@@ -85,4 +85,5 @@ class Soft_Mesh(PINN_Base):
             "n_params": params,
             "shape_fit": self.layers[:],
             "shape_mesh": self.layers_mesh[:],
+            "dtype": "float32" if self.dtype == tf.float32 else "float64"
         }
