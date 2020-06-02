@@ -81,7 +81,7 @@ class Soft_Mesh(PINN_Base):
     def get_architecture_description(self):
         params = self._count_params()
         return {
-            "arch_name": "domain_transformer",
+            "arch_name": "soft_mesh",
             "n_params": params,
             "shape_fit": self.layers[:],
             "shape_mesh": self.layers_mesh[:],
