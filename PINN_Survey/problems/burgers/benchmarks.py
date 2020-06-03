@@ -65,8 +65,20 @@ def burgers_arch_comparison_v1(
     lower_bound = np.min(X_true, axis=0)
     upper_bound = np.max(X_true, axis=0)
 
+    layers_base = [2] + ([width]*depth) + [1]
+
     layers_approx = [2] + ([width]*2) + [1]
     layers_mesh = [2] + ([width]*(depth-2))
+
+    model_base = burgers.Burgers(lower_bound, upper_bound, layers_base, nu)
+
+    benchmark_burgers = benchmark.Benchmark(
+        problem_desc, model_base, [X, U, X_df, X_true, U_true], optimizer_desc)
+
+    print("Beginning Base")
+    benchmark.log_benchmark(
+        benchmark_burgers, n_trials, file_path)
+
     model_softmesh = burgers.Burgers_Soft_Mesh(
         lower_bound, upper_bound, layers_approx, layers_mesh, nu)
 
@@ -89,5 +101,6 @@ def burgers_arch_comparison_v1(
 
 
 if __name__ == "__main__":
-    burgers_arch_comparison_v1(
-        n_trials=20, log_file="logs/burgers_arch_comparison_v1.json")
+    for depth in [4, 5, 6]:
+        burgers_arch_comparison_v1(
+            n_trials=25, depth=depth, log_file="logs/burgers_arch_comparison_v1.json")
