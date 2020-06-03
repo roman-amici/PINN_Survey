@@ -1,11 +1,11 @@
 import PINN_Survey.benchmarking.benchmark as benchmark
-import PINN_Survey.problems.poisson_2d_steep.v1 as poisson
-from PINN_Survey.problems.poisson_2d_steep.data.load import load_poisson_bounds
+import PINN_Survey.problems.laplace_smooth.v1 as laplace
+from PINN_Survey.problems.laplace_smooth.data.load import load_laplace_bounds
 import numpy as np
 import os
 
 problem_desc = {
-    "equation": "Poisson",
+    "equation": "Laplace",
     "description_file": ""
 }
 
@@ -14,8 +14,8 @@ optimizer_desc = {
 }
 
 
-def poisson_2d_steep_arch_comparison_v1(
-        log_file="logs/poisson_2d_steep_arch_comparison_v1.json",
+def laplace_smooth_arch_comparison_v1(
+        log_file="logs/laplace_smooth_arch_comparison_v1.json",
         n_trials=20,
         n_df=10000,
         width=20,
@@ -25,7 +25,7 @@ def poisson_2d_steep_arch_comparison_v1(
     file_path = f"{path}/{log_file}"
 
     X_true, U_true, X_bounds, U_bounds, [
-        x, t, u] = load_poisson_bounds()
+        x, t, u] = load_laplace_bounds()
 
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
@@ -41,38 +41,38 @@ def poisson_2d_steep_arch_comparison_v1(
     layers_approx = [2] + ([width]*2) + [1]
     layers_mesh = [2] + ([width]*(depth-2))
 
-    model_base = poisson.Poisson(
+    model_base = laplace.Laplace(
         lower_bound, upper_bound, layers_base)
 
-    benchmark_poisson_2d_steep = benchmark.Benchmark(
+    benchmark_laplace_smooth = benchmark.Benchmark(
         problem_desc, model_base, [X, U, X_df, X_true, U_true], optimizer_desc)
 
     print("Beginning Base")
     benchmark.log_benchmark(
-        benchmark_poisson_2d_steep, n_trials, file_path)
+        benchmark_laplace_smooth, n_trials, file_path)
 
-    model_softmesh = poisson.Poisson_Soft_Mesh(
+    model_softmesh = laplace.Laplace_Soft_Mesh(
         lower_bound, upper_bound, layers_approx, layers_mesh)
 
-    benchmark_poisson_2d_steep_softmesh = benchmark.Benchmark(
+    benchmark_laplace_smooth_softmesh = benchmark.Benchmark(
         problem_desc, model_softmesh, [X, U, X_df, X_true, U_true], optimizer_desc)
 
     print("Beginning soft mesh")
     benchmark.log_benchmark(
-        benchmark_poisson_2d_steep_softmesh, n_trials, file_path)
+        benchmark_laplace_smooth_softmesh, n_trials, file_path)
 
-    model_domain_transformer = poisson.Poisson_Domain_Transformer(
+    model_domain_transformer = laplace.Laplace_Domain_Transformer(
         lower_bound, upper_bound, 2, 1, width, depth-2)
 
     print("Beginning Domain Transformer")
-    benchmark_poisson_2d_steep_domain_transformer = benchmark.Benchmark(problem_desc, model_domain_transformer, [
+    benchmark_laplace_smooth_domain_transformer = benchmark.Benchmark(problem_desc, model_domain_transformer, [
         X, U, X_df, X_true, U_true], optimizer_desc)
 
     benchmark.log_benchmark(
-        benchmark_poisson_2d_steep_domain_transformer, n_trials, file_path)
+        benchmark_laplace_smooth_domain_transformer, n_trials, file_path)
 
 
 if __name__ == "__main__":
     for depth in [4, 5, 6, 7, 8]:
-        poisson_2d_steep_arch_comparison_v1(
-            n_trials=25, depth=depth, log_file="logs/poisson_2d_steep_arch_comparison_v1.json")
+        laplace_smooth_arch_comparison_v1(
+            n_trials=25, depth=depth, log_file="logs/laplace_smooth_arch_comparison_v1.json")

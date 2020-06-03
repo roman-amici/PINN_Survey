@@ -77,4 +77,4 @@ def helmholtz_arch_comparison_v1(
 if __name__ == "__main__":
     for depth in [4, 5, 6, 7, 8]:
         helmholtz_arch_comparison_v1(
-            n_trials=1, depth=depth, log_file="logs/helmholtz_arch_comparison_v1.json")
+            n_trials=25, depth=depth, log_file="logs/helmholtz_arch_comparison_v1.json")
