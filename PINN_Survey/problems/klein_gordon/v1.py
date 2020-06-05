@@ -1,5 +1,6 @@
 from PINN_Base.base_v1 import PINN_Base
 from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
+from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
 import tensorflow as tf
 import numpy as np
@@ -88,6 +89,27 @@ class Klein_Gordon_Domain_Transformer(Domain_Transformer):
         self.gamma = gamma
         self.k = k
         super().__init__(lower_bound, upper_bound, 2, 1, width, depth, **kwargs)
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Klein_Gordon_Sphere_Mesh(Sphere_Mesh):
+
+    def __init__(self,
+                 lower_bound,
+                 upper_bound,
+                 layers_approx,
+                 layers_mesh,
+                 alpha, beta, gamma, k,
+                 **kwargs):
+
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.k = k
+
+        super().__init__(lower_bound, upper_bound, layers_approx, layers_mesh, **kwargs)
 
     def _residual(self, u, x, _=None):
         return residual(self, u, x)

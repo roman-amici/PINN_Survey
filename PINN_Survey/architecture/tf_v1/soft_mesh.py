@@ -36,12 +36,16 @@ class Soft_Mesh(PINN_Base):
 
         return tf.nn.softmax(scores), activations
 
+    def _forward_approx(self, X, weights, biases):
+        return self._NN(
+            X, self.weights, self.biases)
+
     def _forward(self, X):
 
         probs, activations_probs = self._forward_mesh(
             X, self.weights_mesh, self.biases_mesh)
 
-        basis_functions, activations_basis = self._NN(
+        basis_functions, activations_basis = self._forward_approx(
             X, self.weights, self.biases)
 
         if X == self.X:

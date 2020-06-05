@@ -1,4 +1,5 @@
 from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
+from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 import tensorflow as tf
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
 from PINN_Base.base_v1 import PINN_Base
@@ -30,6 +31,12 @@ class Laplace_Soft_Mesh(Soft_Mesh):
 
 
 class Laplace_Domain_Transformer(Domain_Transformer):
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Laplace_Sphere_Mesh(Sphere_Mesh):
 
     def _residual(self, u, x, _=None):
         return residual(self, u, x)

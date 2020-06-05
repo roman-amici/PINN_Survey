@@ -1,4 +1,5 @@
 from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
+from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 import tensorflow as tf
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
 from PINN_Base.base_v1 import PINN_Base
@@ -62,6 +63,24 @@ class Burgers_Domain_Transformer(Domain_Transformer):
 
         self.nu = nu
         super().__init__(lower_bound, upper_bound, 2, 1, width, depth, **kwargs)
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Burgers_Sphere_Mesh(Sphere_Mesh):
+
+    def __init__(self,
+                 lower_bound,
+                 upper_bound,
+                 layers_approx,
+                 layers_mesh,
+                 nu,
+                 **kwargs
+                 ):
+
+        self.nu = nu
+        super().__init__(lower_bound, upper_bound, layers_approx, layers_mesh, **kwargs)
 
     def _residual(self, u, x, _=None):
         return residual(self, u, x)

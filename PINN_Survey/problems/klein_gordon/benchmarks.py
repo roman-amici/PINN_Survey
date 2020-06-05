@@ -32,8 +32,6 @@ def klein_gordon_arch_comparison_v1(
     idx = np.random.choice(list(range(X_true.shape[0])), size=n_df)
     X_df = X_true[idx, :]
 
-    nu = .01 / np.pi
-
     lower_bound = np.min(X_true, axis=0)
     upper_bound = np.max(X_true, axis=0)
 
@@ -63,7 +61,7 @@ def klein_gordon_arch_comparison_v1(
     benchmark_klein_gordon_softmesh = benchmark.Benchmark(
         problem_desc, model_softmesh, [X, U, X_df, X_true, U_true], optimizer_desc)
 
-    print("Beginning Soft <esh")
+    print("Beginning Soft mesh")
     benchmark.log_benchmark(
         benchmark_klein_gordon_softmesh, n_trials, file_path)
 
@@ -78,7 +76,49 @@ def klein_gordon_arch_comparison_v1(
         benchmark_klein_gordon_domain_transformer, n_trials, file_path)
 
 
+def klein_gordon_sphere_mesh_v1(
+        log_file="logs/kelin_gordon_arch_comparison_v1.json",
+        n_trials=20,
+        n_df=10000,
+        layers_mesh=[2, 20, 20, 20, 20],
+        layers_approx=[2, 20, 20, 1]):
+
+    path = os.path.dirname(os.path.abspath(__file__))
+    file_path = f"{path}/{log_file}"
+
+    X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_klein_gordon_bounds()
+
+    X = np.vstack(X_bounds)
+    U = np.vstack(U_bounds)
+
+    idx = np.random.choice(list(range(X_true.shape[0])), size=n_df)
+    X_df = X_true[idx, :]
+
+    alpha = -1
+    beta = 0
+    gamma = 1
+    k = 3
+
+    lower_bound = np.min(X_true, axis=0)
+    upper_bound = np.max(X_true, axis=0)
+
+    model_sphere_mesh = klein_gordon.Klein_Gordon_Sphere_Mesh(
+        lower_bound, upper_bound, layers_approx, layers_mesh, alpha, beta, gamma, k)
+
+    benchmark_klein_gordon_sphere_mesh = benchmark.Benchmark(
+        problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
+
+    benchmark.log_benchmark(
+        benchmark_klein_gordon_sphere_mesh, n_trials, file_path)
+
+
 if __name__ == "__main__":
-    for depth in [4, 5, 6, 7, 8]:
-        klein_gordon_arch_comparison_v1(
-            n_trials=25, depth=depth, log_file="logs/Klein_Gordon_arch_comparison_v1.json")
+    width = 20
+    for depth in [4, 5, 6, 7, 8, 9, 10]:
+        layers_approx = [2] + ([width]*2) + [1]
+        layers_mesh = [2] + ([width]*(depth-2))
+        klein_gordon_sphere_mesh_v1(
+            n_trials=25,
+            layers_approx=layers_approx,
+            layers_mesh=layers_mesh,
+            log_file="logs/klein_gordon_arch_comparison_v1.json")
