@@ -3,6 +3,7 @@ import PINN_Survey.problems.laplace_smooth.v1 as laplace
 from PINN_Survey.problems.laplace_smooth.data.load import load_laplace_bounds
 import numpy as np
 import os
+import tensorflow as tf
 
 problem_desc = {
     "equation": "Laplace",
@@ -12,6 +13,8 @@ problem_desc = {
 optimizer_desc = {
     "name": "L-BFGS",
 }
+
+MAX_THREADS = 32
 
 
 def laplace_smooth_arch_comparison_v1(
@@ -41,8 +44,12 @@ def laplace_smooth_arch_comparison_v1(
     layers_approx = [2] + ([width]*2) + [1]
     layers_mesh = [2] + ([width]*(depth-2))
 
+    config = tf.ConfigProto(
+        intra_op_parallelism_threads=MAX_THREADS
+    )
+
     model_base = laplace.Laplace(
-        lower_bound, upper_bound, layers_base)
+        lower_bound, upper_bound, layers_base, session_config=config)
 
     benchmark_laplace_smooth = benchmark.Benchmark(
         problem_desc, model_base, [X, U, X_df, X_true, U_true], optimizer_desc)
@@ -52,7 +59,7 @@ def laplace_smooth_arch_comparison_v1(
         benchmark_laplace_smooth, n_trials, file_path)
 
     model_softmesh = laplace.Laplace_Soft_Mesh(
-        lower_bound, upper_bound, layers_approx, layers_mesh)
+        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
 
     benchmark_laplace_smooth_softmesh = benchmark.Benchmark(
         problem_desc, model_softmesh, [X, U, X_df, X_true, U_true], optimizer_desc)
@@ -61,8 +68,18 @@ def laplace_smooth_arch_comparison_v1(
     benchmark.log_benchmark(
         benchmark_laplace_smooth_softmesh, n_trials, file_path)
 
+    model_sphere_mesh = laplace.Laplace_Sphere_Mesh(
+        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
+
+    benchmark_laplace_smooth_spheremesh = benchmark.Benchmark(
+        problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
+
+    print("Beginning sphere mesh")
+    benchmark.log_benchmark(
+        benchmark_laplace_smooth_spheremesh, n_trials, file_path)
+
     model_domain_transformer = laplace.Laplace_Domain_Transformer(
-        lower_bound, upper_bound, 2, 1, width, depth-2)
+        lower_bound, upper_bound, 2, 1, width, depth-2, session_config=config)
 
     print("Beginning Domain Transformer")
     benchmark_laplace_smooth_domain_transformer = benchmark.Benchmark(problem_desc, model_domain_transformer, [
@@ -82,6 +99,10 @@ def laplace_sphere_mesh_v1(
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
 
+    config = tf.ConfigProto(
+        intra_op_parallelism_threads=MAX_THREADS
+    )
+
     X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_laplace_bounds()
 
     X = np.vstack(X_bounds)
@@ -94,7 +115,7 @@ def laplace_sphere_mesh_v1(
     upper_bound = np.max(X_true, axis=0)
 
     model_sphere_mesh = laplace.Laplace_Sphere_Mesh(
-        lower_bound, upper_bound, layers_approx, layers_mesh)
+        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
 
     benchmark_laplace_sphere_mesh = benchmark.Benchmark(
         problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
