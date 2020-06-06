@@ -4,8 +4,8 @@ import tensorflow as tf
 
 
 def train_lr_anneling(self, X, U, X_df, epochs, **kwargs):
-    #optimizer = SGD(**kwargs)
-    optimizer = Adam()
+    optimizer = SGD(**kwargs)
+    # optimizer = Adam(**kwargs)
 
     X = tf.convert_to_tensor(X, dtype=tf.float32)
     U = tf.convert_to_tensor(U, dtype=tf.float32)
@@ -14,6 +14,9 @@ def train_lr_anneling(self, X, U, X_df, epochs, **kwargs):
         X_df = tf.convert_to_tensor(X_df, dtype=tf.float32)
     else:
         X_df = None
+
+    l_last = 0.0
+    alpha = 0.9
 
     progbar = Progbar(epochs)
     for i in range(epochs):
@@ -33,6 +36,10 @@ def train_lr_anneling(self, X, U, X_df, epochs, **kwargs):
 
         del param_tape
 
+        # Not sure what's causing the final bias to be null...
+        grads_residual = [grad if grad is not None else tf.constant(
+            0.0) for grad in grads_residual]
+
         # Find the maximum gradient for each of the two losses
         residual_max = 0
         for grad in grads_residual:
@@ -42,17 +49,21 @@ def train_lr_anneling(self, X, U, X_df, epochs, **kwargs):
         for grad in grads_collocation:
             collocation_max = max(collocation_max, tf.math.reduce_max(grad))
 
+        #print(residual_max, collocation_max)
         # Find the average for the collocation loss
         collocation_mean = tf.math.reduce_mean(
             tf.concat([
                 tf.abs(tf.reshape(g, [-1])) for g in grads_collocation
             ], axis=0))
 
-        l = residual_max / collocation_mean
-        grads = [(l*g_c + g_r)
+        l_new = residual_max / collocation_mean
+
+        l_last = (1 - alpha)*l_last + alpha*l_new
+
+        grads = [(g_c + g_r/l_last)
                  for g_c, g_r in zip(grads_collocation, grads_residual)]
 
         # Rescale the interior (residual) gradients
         optimizer.apply_gradients(zip(grads, params))
 
-        progbar.update(i+1, [("loss", loss), ("reweight", l)])
+        progbar.update(i+1, [("loss", loss), ("reweight", l_last)])

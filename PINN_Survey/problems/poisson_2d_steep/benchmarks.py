@@ -3,6 +3,7 @@ import PINN_Survey.problems.poisson_2d_steep.v1 as poisson
 from PINN_Survey.problems.poisson_2d_steep.data.load import load_poisson_bounds
 import numpy as np
 import os
+import tensorflow as tf
 
 problem_desc = {
     "equation": "Poisson",
@@ -12,6 +13,8 @@ problem_desc = {
 optimizer_desc = {
     "name": "L-BFGS",
 }
+
+MAX_THREADS = 32
 
 
 def poisson_2d_steep_arch_comparison_v1(
@@ -41,8 +44,12 @@ def poisson_2d_steep_arch_comparison_v1(
     layers_approx = [2] + ([width]*2) + [1]
     layers_mesh = [2] + ([width]*(depth-2))
 
+    config = tf.ConfigProto(
+        intra_op_parallelism_threads=MAX_THREADS
+    )
+
     model_base = poisson.Poisson(
-        lower_bound, upper_bound, layers_base)
+        lower_bound, upper_bound, layers_base, session_config=config)
 
     benchmark_poisson_2d_steep = benchmark.Benchmark(
         problem_desc, model_base, [X, U, X_df, X_true, U_true], optimizer_desc)
@@ -52,7 +59,7 @@ def poisson_2d_steep_arch_comparison_v1(
         benchmark_poisson_2d_steep, n_trials, file_path)
 
     model_softmesh = poisson.Poisson_Soft_Mesh(
-        lower_bound, upper_bound, layers_approx, layers_mesh)
+        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
 
     benchmark_poisson_2d_steep_softmesh = benchmark.Benchmark(
         problem_desc, model_softmesh, [X, U, X_df, X_true, U_true], optimizer_desc)
@@ -62,7 +69,20 @@ def poisson_2d_steep_arch_comparison_v1(
         benchmark_poisson_2d_steep_softmesh, n_trials, file_path)
 
     model_domain_transformer = poisson.Poisson_Domain_Transformer(
-        lower_bound, upper_bound, 2, 1, width, depth-2)
+        lower_bound, upper_bound, 2, 1, width, depth-2, session_config=config)
+
+    model_sphere_mesh = poisson.Poisson_Sphere_Mesh(
+        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
+
+    benchmark_poisson_2d_steep_spheremesh = benchmark.Benchmark(
+        problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
+
+    print("Beginning sphere mesh")
+    benchmark.log_benchmark(
+        benchmark_poisson_2d_steep_spheremesh, n_trials, file_path)
+
+    model_domain_transformer = poisson.Poisson_Domain_Transformer(
+        lower_bound, upper_bound, 2, 1, width, depth-2, session_config=config)
 
     print("Beginning Domain Transformer")
     benchmark_poisson_2d_steep_domain_transformer = benchmark.Benchmark(problem_desc, model_domain_transformer, [
@@ -82,6 +102,10 @@ def poisson_sphere_mesh_v1(
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
 
+    config = tf.ConfigProto(
+        intra_op_parallelism_threads=MAX_THREADS
+    )
+
     X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_poisson_bounds()
 
     X = np.vstack(X_bounds)
@@ -94,7 +118,7 @@ def poisson_sphere_mesh_v1(
     upper_bound = np.max(X_true, axis=0)
 
     model_sphere_mesh = poisson.Poisson_Sphere_Mesh(
-        lower_bound, upper_bound, layers_approx, layers_mesh)
+        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
 
     benchmark_poisson_sphere_mesh = benchmark.Benchmark(
         problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
