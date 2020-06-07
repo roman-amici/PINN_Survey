@@ -68,18 +68,15 @@ def poisson_2d_steep_arch_comparison_v1(
     benchmark.log_benchmark(
         benchmark_poisson_2d_steep_softmesh, n_trials, file_path)
 
-    model_domain_transformer = poisson.Poisson_Domain_Transformer(
-        lower_bound, upper_bound, 2, 1, width, depth-2, session_config=config)
+    # model_sphere_mesh = poisson.Poisson_Sphere_Mesh(
+    #     lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
 
-    model_sphere_mesh = poisson.Poisson_Sphere_Mesh(
-        lower_bound, upper_bound, layers_approx, layers_mesh, session_config=config)
+    # benchmark_poisson_2d_steep_spheremesh = benchmark.Benchmark(
+    #     problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
 
-    benchmark_poisson_2d_steep_spheremesh = benchmark.Benchmark(
-        problem_desc, model_sphere_mesh, [X, U, X_df, X_true, U_true], optimizer_desc)
-
-    print("Beginning sphere mesh")
-    benchmark.log_benchmark(
-        benchmark_poisson_2d_steep_spheremesh, n_trials, file_path)
+    # print("Beginning sphere mesh")
+    # benchmark.log_benchmark(
+    #     benchmark_poisson_2d_steep_spheremesh, n_trials, file_path)
 
     model_domain_transformer = poisson.Poisson_Domain_Transformer(
         lower_bound, upper_bound, 2, 1, width, depth-2, session_config=config)
@@ -129,11 +126,9 @@ def poisson_sphere_mesh_v1(
 
 if __name__ == "__main__":
     width = 20
-    for depth in [4, 5, 6, 7, 8, 9, 10]:
-        layers_approx = [2] + ([width]*2) + [1]
-        layers_mesh = [2] + ([width]*(depth-2))
-        poisson_sphere_mesh_v1(
+    for depth in [4, 5, 6, 7, 8, ]:
+        poisson_2d_steep_arch_comparison_v1(
             n_trials=25,
-            layers_approx=layers_approx,
-            layers_mesh=layers_mesh,
+            width=width,
+            depth=depth,
             log_file="logs/poisson_2d_steep_arch_comparison_v1.json")
