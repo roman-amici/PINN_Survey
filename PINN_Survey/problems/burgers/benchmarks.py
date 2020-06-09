@@ -26,7 +26,7 @@ def burgers_benchmark_v1(
 
     path = os.path.dirname(os.path.abspath(__file__))
 
-    X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_burgers_bounds()
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
 
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
@@ -56,7 +56,7 @@ def burgers_arch_comparison_v1(
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
 
-    X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_burgers_bounds()
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
 
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
@@ -114,7 +114,7 @@ def burgers_sphere_mesh_v1(
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
 
-    X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_burgers_bounds()
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
 
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
@@ -146,7 +146,7 @@ def burgers_sample_size_scaling(
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
 
-    X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_burgers_bounds()
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
 
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
@@ -210,7 +210,7 @@ def burgers_width_depth_scaling(
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
 
-    X_true, U_true, X_bounds, U_bounds, [x, t, u] = load_burgers_bounds()
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
 
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
