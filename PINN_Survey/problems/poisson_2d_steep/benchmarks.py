@@ -139,9 +139,6 @@ def poisson_sample_size_scaling(
     X = np.vstack(X_bounds)
     U = np.vstack(U_bounds)
 
-    idx = np.random.choice(list(range(X_true.shape[0])), size=n_df)
-    X_df = X_true[idx, :]
-
     lower_bound = np.min(X_true, axis=0)
     upper_bound = np.max(X_true, axis=0)
 
