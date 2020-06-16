@@ -266,8 +266,44 @@ def burgers_width_depth_scaling(
                 benchmark_burgers_sphere_mesh, n_trials, file_path)
 
 
+def burgers_sphere_net_v1(
+        log_file="logs/burgers_arch_comparison_v1.json",
+        n_trials=20,
+        n_df=10000,
+        layers=[2, 20, 20, 20, 20, 1]):
+
+    path = os.path.dirname(os.path.abspath(__file__))
+    file_path = f"{path}/{log_file}"
+
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
+
+    X = np.vstack(X_bounds)
+    U = np.vstack(U_bounds)
+
+    idx = np.random.choice(list(range(X_true.shape[0])), size=n_df)
+    X_df = X_true[idx, :]
+
+    nu = .01 / np.pi
+
+    lower_bound = np.min(X_true, axis=0)
+    upper_bound = np.max(X_true, axis=0)
+
+    config = tf.ConfigProto(
+        intra_op_parallelism_threads=MAX_THREADS
+    )
+
+    model_sphere_net = burgers.Burgers_Sphere_Net(
+        lower_bound, upper_bound, layers, nu, session_config=config)
+
+    benchmark_burgers_sphere_net = benchmark.Benchmark(
+        problem_desc, model_sphere_net, [X, U, X_df, X_true, U_true], optimizer_desc)
+
+    benchmark.log_benchmark(
+        benchmark_burgers_sphere_net, n_trials, file_path)
+
+
 if __name__ == "__main__":
-    if sys.argv[1] == "sample":
-        burgers_sample_size_scaling()
-    elif sys.argv[1] == "width":
-        burgers_width_depth_scaling()
+    for depth in [4, 5, 6, 7, 8, 9, 10]:
+        inner = [20] * depth
+        layers = [2] + inner + [1]
+        burgers_sphere_net_v1(layers=layers)
