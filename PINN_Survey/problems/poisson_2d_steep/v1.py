@@ -1,6 +1,7 @@
 from PINN_Base.base_v1 import PINN_Base
 from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
 from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
+from PINN_Survey.architecture.tf_v1.sphere_net import Sphere_Net
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
 import tensorflow as tf
 import numpy as np
@@ -51,6 +52,12 @@ class Poisson_Domain_Transformer(Domain_Transformer):
 
 
 class Poisson_Sphere_Mesh(Sphere_Mesh):
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Poisson_Sphere_Net(Sphere_Net):
 
     def _residual(self, u, x, _=None):
         return residual(self, u, x)
