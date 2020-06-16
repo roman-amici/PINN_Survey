@@ -234,7 +234,7 @@ def laplace_sphere_net_v1(
         log_file="logs/laplace_arch_comparison_v1.json",
         n_trials=20,
         n_df=10000,
-        layers):
+        layers=[2, 20, 20, 20, 20, 1]):
 
     path = os.path.dirname(os.path.abspath(__file__))
     file_path = f"{path}/{log_file}"
