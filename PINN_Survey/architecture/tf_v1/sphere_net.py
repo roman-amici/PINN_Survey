@@ -19,7 +19,7 @@ class Sphere_Net(PINN_Base):
             activations.append(H)
 
         W = weights[-2]
-        biases = biases[-2]
+        b = biases[-2]
         Z = tf.square(tf.add(tf.matmul(H, W), b))
         H = Z / tf.reduce_sum(Z, axis=1)[:, None]
         activations.append(H)

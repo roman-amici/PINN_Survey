@@ -2,6 +2,7 @@ from PINN_Base.base_v1 import PINN_Base
 from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
 from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
+from PINN_Survey.architecture.tf_v1.sphere_net import Sphere_Net
 import tensorflow as tf
 import numpy as np
 
@@ -15,7 +16,8 @@ def q(self, X):
     # We implicitly remove the k^2 sin(x)*sin(y) term since it cancels
     # Otherwise we would essentially be leaking the solution in the differential equation
     return -(a*pi)**2 * sin(a*pi*X[:, 0]) * sin(b*pi*X[:, 1]) - \
-        (b*pi)**2 * sin(a*pi*X[:, 0])*sin(b*pi*X[:, 1])
+        (b*pi)**2 * sin(a*pi*X[:, 0])*sin(b*pi*X[:, 1]
+                                          ) + sin(a*pi*X[:, 0])*sin(b*pi*X[:, 1])
 
 
 def residual(self, u, x):
@@ -27,7 +29,7 @@ def residual(self, u, x):
     u_xx = U_2x[:, 0]
     u_yy = U_2y[:, 1]
 
-    return u_xx + u_yy - q(self, x)
+    return u_xx + u_yy + u[:, 0] - q(self, x)
 
 
 class Helmholtz(PINN_Base):
@@ -97,6 +99,22 @@ class Helmholtz_Sphere_Mesh(Sphere_Mesh):
         self.b = b
 
         super().__init__(lower_bound, upper_bound, layers_approx, layers_mesh, **kwargs)
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Helmholtz_Sphere_Net(Sphere_Net):
+    def __init__(self,
+                 lower_bound,
+                 upper_bound,
+                 layers,
+                 a, b,
+                 **kwargs):
+
+        self.a = a
+        self.b = b
+        super().__init__(lower_bound, upper_bound, layers, **kwargs)
 
     def _residual(self, u, x, _=None):
         return residual(self, u, x)
