@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(0, "../")
 
-from PINN_Survey.problems.burgers.v1 import Burgers
+from PINN_Survey.problems.burgers.v1 import Burgers, Burgers_Siren, Burgers_Random_Fourier
 from PINN_Survey.problems.burgers.data.load import load_burgers_bounds
 from PINN_Survey.problems.helmholtz.data.load import load_helmholtz_bounds
-from PINN_Survey.problems.helmholtz.v1 import Helmholtz
+from PINN_Survey.problems.helmholtz.v1 import Helmholtz, Helmholtz_Siren, Helmholtz_Random_Fourier
 from PINN_Base.util import bounds_from_data, random_choice
 import numpy as np
 import tensorflow as tf
@@ -90,6 +90,52 @@ def burgers_big_rmsprop():
         f.write(f"burgers,rms,{rel_error}\n")
 
 
+def burgers_big_siren():
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
+
+    X = np.vstack(X_bounds)
+    U = np.vstack(U_bounds)
+    X_df = random_choice(X_true)
+
+    lower_bound, upper_bound = bounds_from_data(X_true)
+
+    layers = [2, 256, 256, 256, 256, 256, 1]
+    nu = .01 / np.pi
+    model = Burgers_Siren(
+        lower_bound, upper_bound, layers, nu, session_config=config, use_collocation_residual=False)
+
+    model.train_Adam_batched(X, U, X_df, batch_size=64, epochs=50000)
+    U_hat = model.predict(X_true)
+    rel_error = np.linalg.norm(U_true - U_hat, 2) / np.linalg.norm(U_true, 2)
+
+    print(rel_error)
+    with open("big_log.csv", "a+") as f:
+        f.write(f"burgers_siren,Adam,{rel_error}\n")
+
+
+def burgers_big_rf():
+    X_true, U_true, X_bounds, U_bounds, _ = load_burgers_bounds()
+
+    X = np.vstack(X_bounds)
+    U = np.vstack(U_bounds)
+    X_df = random_choice(X_true)
+
+    lower_bound, upper_bound = bounds_from_data(X_true)
+
+    layers = [2, 256, 256, 256, 256, 256, 1]
+    nu = .01 / np.pi
+    model = Burgers_Random_Fourier(
+        lower_bound, upper_bound, layers, nu, session_config=config, use_collocation_residual=False)
+
+    model.train_Adam_batched(X, U, X_df, batch_size=64, epochs=50000)
+    U_hat = model.predict(X_true)
+    rel_error = np.linalg.norm(U_true - U_hat, 2) / np.linalg.norm(U_true, 2)
+
+    print(rel_error)
+    with open("big_log.csv", "a+") as f:
+        f.write(f"burgers_rf,Adam,{rel_error}\n")
+
+
 def helmholtz_big_adam():
     X_true, U_true, X_bounds, U_bounds, _ = load_helmholtz_bounds()
 
@@ -129,13 +175,61 @@ def helmholtz_big_rmsprop():
     model = Helmholtz_Base_RMSProp(
         lower_bound, upper_bound, layers, a, b, session_config=config, use_collocation_residual=False, df_multiplier=1e-2)
 
-    model.train_RMSProp_batched(X, U, X_df, batch_size=64, epochs=1)
+    model.train_RMSProp_batched(X, U, X_df, batch_size=64, epochs=50000)
     U_hat = model.predict(X_true)
     rel_error = np.linalg.norm(U_true - U_hat, 2) / np.linalg.norm(U_true, 2)
 
     print(rel_error)
     with open("big_log.csv", "a+") as f:
         f.write(f"helmholtz,rms,{rel_error}\n")
+
+
+def helmholtz_big_siren():
+    X_true, U_true, X_bounds, U_bounds, _ = load_helmholtz_bounds()
+
+    X = np.vstack(X_bounds)
+    U = np.vstack(U_bounds)
+    X_df = random_choice(X_true)
+
+    lower_bound, upper_bound = bounds_from_data(X_true)
+
+    layers = [2, 256, 256, 256, 256, 256, 1]
+    a = 1
+    b = 4
+    model = Helmholtz_Siren(
+        lower_bound, upper_bound, layers, a, b, session_config=config, use_collocation_residual=False, df_multiplier=1e-2)
+
+    model.train_Adam_batched(X, U, X_df, batch_size=64, epochs=50000)
+    U_hat = model.predict(X_true)
+    rel_error = np.linalg.norm(U_true - U_hat, 2) / np.linalg.norm(U_true, 2)
+
+    print(rel_error)
+    with open("big_log.csv", "a+") as f:
+        f.write(f"helmholtz_siren,Adam,{rel_error}\n")
+
+
+def helmholtz_big_rf():
+    X_true, U_true, X_bounds, U_bounds, _ = load_helmholtz_bounds()
+
+    X = np.vstack(X_bounds)
+    U = np.vstack(U_bounds)
+    X_df = random_choice(X_true)
+
+    lower_bound, upper_bound = bounds_from_data(X_true)
+
+    layers = [2, 256, 256, 256, 256, 256, 1]
+    a = 1
+    b = 4
+    model = Helmholtz_Random_Fourier(
+        lower_bound, upper_bound, layers, a, b, session_config=config, use_collocation_residual=False, df_multiplier=1e-2)
+
+    model.train_Adam_batched(X, U, X_df, batch_size=64, epochs=50000)
+    U_hat = model.predict(X_true)
+    rel_error = np.linalg.norm(U_true - U_hat, 2) / np.linalg.norm(U_true, 2)
+
+    print(rel_error)
+    with open("big_log.csv", "a+") as f:
+        f.write(f"helmholtz_rf,Adam,{rel_error}\n")
 
 
 if __name__ == "__main__":
@@ -147,3 +241,11 @@ if __name__ == "__main__":
         helmholtz_big_adam()
     elif int(sys.argv[1]) == 3:
         helmholtz_big_rmsprop()
+    elif int(sys.argv[1]) == 4:
+        burgers_big_siren()
+    elif int(sys.argv[1]) == 5:
+        burgers_big_rf()
+    elif int(sys.argv[1]) == 6:
+        helmholtz_big_siren()
+    elif int(sys.argv[1]) == 7:
+        helmholtz_big_rf()

@@ -3,6 +3,8 @@ from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
 from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
 from PINN_Survey.architecture.tf_v1.sphere_net import Sphere_Net
+from PINN_Survey.architecture.tf_v1.siren import Siren
+from PINN_Survey.architecture.tf_v1.random_fourier import Random_Fourier
 import tensorflow as tf
 import numpy as np
 
@@ -15,9 +17,9 @@ def q(self, X):
 
     # We implicitly remove the k^2 sin(x)*sin(y) term since it cancels
     # Otherwise we would essentially be leaking the solution in the differential equation
-    return -(a*pi)**2 * sin(a*pi*X[:, 0]) * sin(b*pi*X[:, 1]) - \
-        (b*pi)**2 * sin(a*pi*X[:, 0])*sin(b*pi*X[:, 1]
-                                          ) + sin(a*pi*X[:, 0])*sin(b*pi*X[:, 1])
+    return -(a * pi)**2 * sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1]) - \
+        (b * pi)**2 * sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1]
+                                                  ) + sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1])
 
 
 def residual(self, u, x):
@@ -105,6 +107,38 @@ class Helmholtz_Sphere_Mesh(Sphere_Mesh):
 
 
 class Helmholtz_Sphere_Net(Sphere_Net):
+    def __init__(self,
+                 lower_bound,
+                 upper_bound,
+                 layers,
+                 a, b,
+                 **kwargs):
+
+        self.a = a
+        self.b = b
+        super().__init__(lower_bound, upper_bound, layers, **kwargs)
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Helmholtz_Siren(Siren):
+    def __init__(self,
+                 lower_bound,
+                 upper_bound,
+                 layers,
+                 a, b,
+                 **kwargs):
+
+        self.a = a
+        self.b = b
+        super().__init__(lower_bound, upper_bound, layers, **kwargs)
+
+    def _residual(self, u, x, _=None):
+        return residual(self, u, x)
+
+
+class Helmholtz_Random_Fourier(Random_Fourier):
     def __init__(self,
                  lower_bound,
                  upper_bound,
