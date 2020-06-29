@@ -54,7 +54,7 @@ class Domain_Transformer(base_v1.PINN_Base):
             (self.upper_bound - self.lower_bound) - 1.0
         activations.append(H)
 
-        for l in range(len(weights)-1):
+        for l in range(len(weights) - 1):
             W = weights[l]
             b = biases[l]
             Z = tf.tanh(tf.add(tf.matmul(H, W), b))
@@ -89,6 +89,16 @@ class Domain_Transformer(base_v1.PINN_Base):
 
     def get_T2(self, X):
         return self.sess.run(self.T2, {self.X: X})
+
+    def get_all_weights(self):
+        return self.sess.run(self.get_all_weight_variables())
+
+    def get_all_weight_variables(self):
+        return [
+            self.weights, self.biases,
+            self.weights_T1, self.biases_T1,
+            self.weights_T2, self.biases_T2
+        ]
 
     def _count_params(self):
         params_main = super()._count_params()

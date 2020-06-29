@@ -57,6 +57,12 @@ class Soft_Mesh(PINN_Base):
         # Take the combination of basis functions multiplied by probabilities.
         return tf.reduce_sum(basis_functions * probs, axis=1)[:, None]
 
+    def get_all_weights(self):
+        return self.sess.run(self.get_all_weight_variables())
+
+    def get_all_weight_variables(self):
+        return [self.weights, self.biases, self.weights_mesh, self.biases_mesh]
+
     def get_output_dim(self):
         return self.output_dim
 
