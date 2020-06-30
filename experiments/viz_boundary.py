@@ -70,7 +70,7 @@ def burgers_boundary_base():
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, X_df, w0, 512)
 
-    save_as_heightmap("burgers-boundary-base.png", loss)
+    save_as_heightmap("burgers-boundary-base.png", np.log(loss))
 
 
 def burgers_boundary_mesh():
@@ -93,7 +93,7 @@ def burgers_boundary_mesh():
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, X_df, w0, 512)
 
-    save_as_heightmap("burgers-boundary-mesh.png", loss)
+    save_as_heightmap("burgers-boundary-mesh.png", np.log(loss))
 
 
 def helmholtz_boundary_base(df_multiplier):
@@ -115,7 +115,8 @@ def helmholtz_boundary_base(df_multiplier):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, X_df, w0, 512)
 
-    save_as_heightmap(f"helmholtz-boundary-base-{df_multiplier}.png", loss)
+    save_as_heightmap(
+        f"helmholtz-boundary-base-{df_multiplier}.png", np.log(loss))
 
 
 def helmholtz_boundary_mesh(df_multiplier):
@@ -137,7 +138,8 @@ def helmholtz_boundary_mesh(df_multiplier):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, X_df, w0, 512)
 
-    save_as_heightmap(f"helmholtz-boundary-mesh-{df_multiplier}.png", loss)
+    save_as_heightmap(
+        f"helmholtz-boundary-mesh-{df_multiplier}.png", np.log(loss))
 
 
 if __name__ == "__main__":

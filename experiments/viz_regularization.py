@@ -97,7 +97,7 @@ def burgers_MLP_base(data_noise):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, None, w0, 512)
 
-    save_as_heightmap(f"burgers-MLP-base-{data_noise}.png", loss)
+    save_as_heightmap(f"burgers-MLP-base-{data_noise}.png", np.log(loss))
 
 
 def burgers_regularization_base(data_noise):
@@ -123,7 +123,8 @@ def burgers_regularization_base(data_noise):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, None, w0, 512)
 
-    save_as_heightmap(f"burgers-regularization-base-{data_noise}.png", loss)
+    save_as_heightmap(
+        f"burgers-regularization-base-{data_noise}.png", np.log(loss))
 
 
 def burgers_regularization_mesh(data_noise):
@@ -150,7 +151,8 @@ def burgers_regularization_mesh(data_noise):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, None, w0, 512)
 
-    save_as_heightmap(f"burgers-regularization-mesh-{data_noise}.png", loss)
+    save_as_heightmap(
+        f"burgers-regularization-mesh-{data_noise}.png", np.log(loss))
 
 
 def helmholtz_regularization_base(data_noise):
@@ -175,7 +177,8 @@ def helmholtz_regularization_base(data_noise):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, None, w0, 512)
 
-    save_as_heightmap(f"helmholtz-regularization-base-{data_noise}.png", loss)
+    save_as_heightmap(
+        f"helmholtz-regularization-base-{data_noise}.png", np.log(loss))
 
 
 def helmholtz_MLP_base(data_noise):
@@ -200,7 +203,7 @@ def helmholtz_MLP_base(data_noise):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, None, w0, 512)
 
-    save_as_heightmap(f"helmholtz-MLP-base-{data_noise}.png", loss)
+    save_as_heightmap(f"helmholtz-MLP-base-{data_noise}.png", np.log(loss))
 
 
 def helmholtz_regularization_mesh(data_noise):
@@ -226,7 +229,8 @@ def helmholtz_regularization_mesh(data_noise):
 
     _, _, [_, _, loss] = viz_2d_layer_norm(model_viz, X, U, None, w0, 512)
 
-    save_as_heightmap(f"helmholtz-regularization-mesh-{data_noise}.png", loss)
+    save_as_heightmap(
+        f"helmholtz-regularization-mesh-{data_noise}.png", np.log(loss))
 
 
 if __name__ == "__main__":
