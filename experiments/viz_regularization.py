@@ -48,7 +48,7 @@ def quick_setup(loader, size=1000):
     return X_true, U_true, X, U, lower_bound, upper_bound
 
 
-def burgers_regularization_base(df_multiplier, data_noise):
+def burgers_regularization_base(data_noise, df_multiplier):
 
     X_true, U_true, X, U, lower_bound, upper_bound = quick_setup(
         load_burgers_bounds)
@@ -103,7 +103,7 @@ def burgers_regularization_mesh(data_noise):
         f"burgers-regularization-mesh-{data_noise}.png", np.log(loss))
 
 
-def helmholtz_regularization_base(df_multiplier, data_noise):
+def helmholtz_regularization_base(data_noise, df_multiplier):
 
     X_true, U_true, X, U, lower_bound, upper_bound = quick_setup(
         load_helmholtz_bounds)
