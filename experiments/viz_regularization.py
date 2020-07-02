@@ -157,7 +157,7 @@ def helmholtz_regularization_mesh(data_noise):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == 0:
+    if int(sys.argv[1]) == 0:
         burgers_regularization_base(.1, 0)
         burgers_regularization_base(.1, 1e-5)
         burgers_regularization_base(.1, 1e-4)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         burgers_regularization_base(.1, 1)
         burgers_regularization_base(.1, 10)
         burgers_regularization_base(.1, 100)
-    elif sys.argv[1] == 1:
+    elif int(sys.argv[1]) == 1:
         helmholtz_regularization_base(.1, 0)
         helmholtz_regularization_base(.1, 1e-5)
         helmholtz_regularization_base(.1, 1e-4)
