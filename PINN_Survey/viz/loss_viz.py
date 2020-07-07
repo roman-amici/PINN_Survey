@@ -64,6 +64,63 @@ def viz_2d_layer_norm(model_viz, X, U, X_df, w0, n=100, levels=30):
     return viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, levels)
 
 
+def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, levels=300):
+    d1, d2, points = unit_vectors_SVD(epoch_weights)
+
+    min_points = np.min(points, axis=0)
+    max_points = np.max(points, axis=0)
+
+    t1s = np.linspace(min_points[0] - 1.0, max_points[0] + 1.0, n)
+    t2s = np.linspace(min_points[1] - 1.0, max_points[1] + 1.0, n)
+
+    losses = np.empty((n, n))
+
+    progbar = tf.keras.utils.Progbar(n * n)
+    for i, t1 in enumerate(t1s):
+        for j, t2 in enumerate(t2s):
+            losses[i, j] = model_viz.interpolate_2d(
+                X, U, X_df, w0, d1, d2, t1, t2)
+            progbar.update(i * n + j + 1)
+
+    fig, ax = plt.subplots()
+    ax.contour(t1s, t2s, np.log(losses), levels=levels)
+
+    ax.scatter(points[:, 0], points[:, 1])
+    ax.scatter(points[0, 0], points[0, 1])
+    ax.scatter(points[-1, 0], points[-1, 1])
+
+    return fig, ax, [t1s, t2s, losses]
+
+
+def unit_vectors_SVD(epoch_weights):
+
+    assert(len(epoch_weights) > 1)
+    w0 = epoch_weights[0]
+    u0 = unwrap(w0)
+
+    epoch_matrix = np.empty((len(epoch_weights) - 1, len(u0)))
+
+    for i in range(epoch_matrix.shape[0]):
+        w1 = epoch_weights[i + 1]
+        u1 = unwrap(w1)
+
+        delta = u0 - u1
+        epoch_matrix[i, :] = delta[:]
+
+    _, _, V = np.linalg.svd(epoch_matrix)
+    assert(V.shape[1] == u0.shape[0])
+
+    v1 = V[0, :]
+    v2 = V[1, :]
+
+    points = np.empty((epoch_matrix.shape[0], 2))
+    for r in range(epoch_matrix.shape[0]):
+        points[r, 0] = epoch_matrix[r, :] @ v1
+        points[r, 1] = epoch_matrix[r, :] @ v2
+
+    return wrap(v1, w0), wrap(v2, w0), points
+
+
 def weights_unit_vector(w0):
     w_d = []
     length = 0
@@ -101,6 +158,36 @@ def weights_unit_vector_layerwise(w0):
         w_d.append(layers)
 
     return w_d
+
+
+def unwrap(w0):
+    flats = []
+
+    for collection in w0:
+
+        for layer in collection:
+            flats.append(layer.flatten())
+
+    return np.hstack(flats)
+
+
+def wrap(flat_array, w0):
+
+    start = 0
+    w1 = []
+    for collection in w0:
+
+        new_collection = []
+        for layer in collection:
+            end = start + layer.size
+            sub_layer = np.reshape(flat_array[start:end], layer.shape)
+            new_collection.append(sub_layer)
+
+            start = end
+
+        w1.append(new_collection)
+
+    return w1
 
 
 def viz_base(cls):
