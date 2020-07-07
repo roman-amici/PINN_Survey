@@ -83,42 +83,47 @@ def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, levels=300):
             progbar.update(i * n + j + 1)
 
     fig, ax = plt.subplots()
-    ax.contour(t1s, t2s, np.log(losses), levels=levels)
+    ax.contour(t2s, t1s, np.log(losses), levels=levels)
 
-    ax.scatter(points[:, 0], points[:, 1])
-    ax.scatter(points[0, 0], points[0, 1])
-    ax.scatter(points[-1, 0], points[-1, 1])
+    ax.scatter(points[:, 1], points[:, 0], zorder=2)
+    ax.scatter(points[0, 1], points[0, 0], c=["k"], zorder=2)
+    ax.scatter(points[-1, 1], points[-1, 0], marker="X" c=["r"], zorder=2)
 
-    return fig, ax, [t1s, t2s, losses]
+    return fig, ax, [t1s, t2s, losses, points]
 
 
 def unit_vectors_SVD(epoch_weights):
 
     assert(len(epoch_weights) > 1)
-    w0 = epoch_weights[0]
-    u0 = unwrap(w0)
+    wn = epoch_weights[-1]
+    un = unwrap(wn)
 
-    epoch_matrix = np.empty((len(epoch_weights) - 1, len(u0)))
+    epoch_matrix = np.empty((len(epoch_weights) - 1, len(un)))
 
     for i in range(epoch_matrix.shape[0]):
-        w1 = epoch_weights[i + 1]
+        w1 = epoch_weights[i]
         u1 = unwrap(w1)
 
-        delta = u0 - u1
+        delta = u1 - un
         epoch_matrix[i, :] = delta[:]
 
     _, _, V = np.linalg.svd(epoch_matrix)
-    assert(V.shape[1] == u0.shape[0])
+    assert(V.shape[1] == un.shape[0])
 
     v1 = V[0, :]
     v2 = V[1, :]
 
-    points = np.empty((epoch_matrix.shape[0], 2))
-    for r in range(epoch_matrix.shape[0]):
-        points[r, 0] = epoch_matrix[r, :] @ v1
-        points[r, 1] = epoch_matrix[r, :] @ v2
+    t1 = un @ v1
+    t2 = un @ v2
 
-    return wrap(v1, w0), wrap(v2, w0), points
+    points = np.empty((len(epoch_weights), 2))
+    for r in range(len(epoch_weights)):
+        w1 = epoch_weights[r]
+        u1 = unwrap(w1)
+        points[r, 0] = (u1 @ v1) - t1
+        points[r, 1] = (u1 @ v2) - t2
+
+    return wrap(v1, wn), wrap(v2, wn), points
 
 
 def weights_unit_vector(w0):
