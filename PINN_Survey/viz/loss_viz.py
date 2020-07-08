@@ -87,7 +87,7 @@ def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, levels=300):
 
     ax.scatter(points[:, 1], points[:, 0], zorder=2)
     ax.scatter(points[0, 1], points[0, 0], c=["k"], zorder=2)
-    ax.scatter(points[-1, 1], points[-1, 0], marker="X" c=["r"], zorder=2)
+    ax.scatter(points[-1, 1], points[-1, 0], marker="X", c=["r"], zorder=2)
 
     return fig, ax, [t1s, t2s, losses, points]
 
