@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from imageio import imsave
+from PINN_Base import util
 
 
 def save_as_heightmap(fname, values):
@@ -29,67 +30,74 @@ def linear_viz(model_viz, X, U, X_df, w0, w1, metric=None):
     return fig, ax, [ts, metric_values]
 
 
-def viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, levels):
-    t1s = np.linspace(-1, 1, n)
-    t2s = np.linspace(-1, 1, n)
+def viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, metrics=None, min_vals=[-1, -1], max_vals=[1, 1]):
+    t1s = np.linspace(min_vals[0], max_vals[0], n)
+    t2s = np.linspace(min_vals[1], max_vals[1], n)
 
-    losses = np.empty((n, n))
+    if metrics is None:
+        metrics = [model_viz.loss]
+
+    metric_values = [
+        np.empty((n, n)) for _ in metrics
+    ]
 
     progbar = tf.keras.utils.Progbar(n * n)
     for i, t1 in enumerate(t1s):
         for j, t2 in enumerate(t2s):
-            losses[i, j] = model_viz.interpolate_2d(
-                X, U, X_df, w0, d1, d2, t1, t2)
+            results = model_viz.interpolate_2d(
+                X, U, X_df, w0, d1, d2, t1, t2, metrics)
+            for m, result in enumerate(results):
+                metric_values[m][i, j] = result
             progbar.update(i * n + j + 1)
 
-    fig, ax = plt.subplots()
-    ax.contour(t1s, t2s, np.log(losses), levels=levels)
+    if len(metric_values) == 1:
+        return t1s, t2s, metric_values[0]
+    else:
+        return t1s, t2s, metric_values
 
-    return fig, ax, [t1s, t2s, losses]
 
-
-def viz_2d_global_norm(model_viz, X, U, X_df, w0, n=100, levels=30):
+def viz_2d_global_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
 
     d1 = weights_unit_vector(w0)
     d2 = weights_unit_vector(w0)
 
-    return viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, levels)
+    return viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, metrics)
 
 
-def viz_2d_layer_norm(model_viz, X, U, X_df, w0, n=100, levels=30):
+def viz_2d_layer_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
 
     d1 = weights_unit_vector_layerwise(w0)
     d2 = weights_unit_vector_layerwise(w0)
 
-    return viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, levels)
+    return viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, metrics)
 
 
-def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, levels=300):
-    d1, d2, points = unit_vectors_SVD(epoch_weights)
+def make_contour_svd(ax, t1s, t2s, values, points, singular_values, levels=30):
 
-    min_points = np.min(points, axis=0)
-    max_points = np.max(points, axis=0)
+    sv = singular_values**2 / (np.sum(singular_values**2))
+    sv_1 = sv[0] * 100
+    sv_2 = sv[1] * 100
 
-    t1s = np.linspace(min_points[0] - 1.0, max_points[0] + 1.0, n)
-    t2s = np.linspace(min_points[1] - 1.0, max_points[1] + 1.0, n)
+    ax.set_ylabel(f"1st PCA component {sv_1:3.3}%")
+    ax.set_xlabel(f"2nd PCA component {sv_2:3.3}%")
 
-    losses = np.empty((n, n))
-
-    progbar = tf.keras.utils.Progbar(n * n)
-    for i, t1 in enumerate(t1s):
-        for j, t2 in enumerate(t2s):
-            losses[i, j] = model_viz.interpolate_2d(
-                X, U, X_df, w0, d1, d2, t1, t2)
-            progbar.update(i * n + j + 1)
-
-    fig, ax = plt.subplots()
-    ax.contour(t2s, t1s, np.log(losses), levels=levels)
+    ax.contour(t2s, t1s, np.log(values), levels=levels)
 
     ax.scatter(points[:, 1], points[:, 0], zorder=2)
     ax.scatter(points[0, 1], points[0, 0], c=["k"], zorder=2)
     ax.scatter(points[-1, 1], points[-1, 0], marker="X", c=["r"], zorder=2)
 
-    return fig, ax, [t1s, t2s, losses, points]
+
+def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, metrics=None):
+    d1, d2, points, singular_values = unit_vectors_SVD(epoch_weights)
+
+    min_vals = np.min(points, axis=0) - 1.0
+    max_vals = np.max(points, axis=0) + 1.0
+
+    t1s, t2s, metric_values = viz_2d(
+        model_viz, X, U, X_df, w0, d1, d2, n, metrics, min_vals, max_vals)
+
+    return t1s, t2s, metric_values, points, singular_values
 
 
 def unit_vectors_SVD(epoch_weights):
@@ -107,7 +115,7 @@ def unit_vectors_SVD(epoch_weights):
         delta = u1 - un
         epoch_matrix[i, :] = delta[:]
 
-    _, _, V = np.linalg.svd(epoch_matrix)
+    _, singular_vals, V = np.linalg.svd(epoch_matrix)
     assert(V.shape[1] == un.shape[0])
 
     v1 = V[0, :]
@@ -123,7 +131,7 @@ def unit_vectors_SVD(epoch_weights):
         points[r, 0] = (u1 @ v1) - t1
         points[r, 1] = (u1 @ v2) - t2
 
-    return wrap(v1, wn), wrap(v2, wn), points
+    return wrap(v1, wn), wrap(v2, wn), points, singular_vals
 
 
 def weights_unit_vector(w0):
@@ -298,6 +306,28 @@ def viz_base(cls):
         def interpolate_2d(self, X, U, X_df, w0, d1, d2, t1, t2, metrics=None):
             w_t = self.scale_weights_2d(w0, d1, d2, t1, t2)
             return self.run_with_weights(X, U, X_df, w_t, metrics)
+
+        def matvec_with_weights(self, v, X, U, X_df, w_t):
+            input_dict = self.get_input_dict(X, U, X_df)
+            input_dict[self.hessian_vector] = v
+
+            param_dict = self.get_param_dict(
+                self.get_all_weight_variables(), w_t)
+
+            feed_dict = {
+                **input_dict,
+                **param_dict
+            }
+
+            return util.unwrap(self.sess.run(self.hessian_matvec, feed_dict))
+
+        def make_matvec_fn_with_weights(self, X, U, X_df, w0, d1, d2, t1, t2):
+            w_t = self.scale_weights_2d(w0, d1, d2, t1, t2)
+
+            def matvec_fn(v):
+                return self.matvec_with_weights(v, X, U, X_df, w_t)
+
+            return matvec_fn
 
     return viz_base_class
 

@@ -1,0 +1,279 @@
+import sys
+sys.path.append('../')
+from PINN_Survey.problems.burgers.data.load import load_burgers_bounds
+from PINN_Survey.problems.helmholtz.data.load import load_helmholtz_bounds
+from PINN_Base.util import bounds_from_data, random_choice, random_choices, percent_noise
+from PINN_Survey.problems.burgers.v1 import Burgers
+from PINN_Survey.problems.helmholtz.v1 import Helmholtz
+from PINN_Survey.viz.loss_viz import viz_base, viz_2d_layer_norm, save_as_heightmap
+from PINN_Survey.viz.hessian_viz import viz_hessian_eigenvalue_ratio
+import numpy as np
+import matplotlib.pyplot as plt
+import pickle
+import tensorflow as tf
+
+
+@viz_base
+class Burgers_Viz(Burgers):
+    pass
+
+
+@viz_base
+class Helmholtz_Viz(Helmholtz):
+    pass
+
+
+MAX_THREADS = 32
+config = tf.ConfigProto(
+    intra_op_parallelism_threads=MAX_THREADS
+)
+
+
+def quick_setup_df(loader, size=10000):
+
+    X_true, U_true, X_boundary, U_boundary, _ = loader()
+
+    X = np.vstack(X_boundary)
+    U = np.vstack(U_boundary)
+
+    X_df = random_choice(X_true, size=size)
+
+    lower_bound, upper_bound = bounds_from_data(X_true)
+
+    return X_true, U_true, X, U, X_df, lower_bound, upper_bound
+
+
+def quick_setup(loader, size=1000):
+
+    X_true, U_true, _, _, _ = loader()
+
+    [X, U] = random_choices(X_true, U_true, size=size)
+
+    lower_bound, upper_bound = bounds_from_data(X_true)
+
+    return X_true, U_true, X, U, lower_bound, upper_bound
+
+
+def Burgers_bounds(df_multiplier):
+    X_true, U_true, X, U, X_df, lower_bound, upper_bound = quick_setup_df(
+        load_burgers_bounds)
+
+    layers = [2, 20, 20, 20, 20, 20, 20, 1]
+    nu = 0.01 / np.pi
+    model = Burgers(lower_bound, upper_bound, layers,
+                    nu, use_collocation_residual=False, add_grad_ops=True, session_config=config,
+                    df_multiplier=df_multiplier)
+
+    model.train_BFGS(X, U, X_df, True)
+    w0 = model.get_all_weights()
+
+    model_viz = Burgers_Viz(lower_bound, upper_bound, layers,
+                            nu, use_collocation_residual=False, add_grad_ops=True, session_config=config,
+                            df_multiplier=df_multiplier)
+
+    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+        model_viz, X, U, X_df, w0, 100, 50)
+    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
+        model_viz, X, U, X_df, w0, 250)
+
+    name = f"Burgers_Bounds_l{df_multiplier}"
+
+    fig, ax = plt.subplots()
+    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    ax.set_title("Hessian Eigenvalue Ratios (Burgers)")
+    fig.colorbar(pallet, ax=ax)
+    fig.savefig(f"{name}_hessians.png")
+
+    fig, ax = plt.subplots()
+    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    ax.set_title("Loss Surface (Burgers)")
+    fig.savefig(f"{name}_loss.png")
+
+    U_hat = model.predict(X_true)
+    error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
+
+    data = {
+        "t1s_hess": t1s_hess, "t2s_hess": t2s_hess, "ratios": ratios,
+        "t1s_loss": t1s_loss, "t2s_loss": t2s_loss, "loss_vals": loss_vals,
+        "rmse": error
+    }
+
+    with open(f"{name}_data.pkl", "wb+") as f:
+        pickle.dump(data, f)
+
+
+def Burgers_regularization(data_noise, df_multiplier):
+    X_true, U_true, X, U, lower_bound, upper_bound = quick_setup(
+        load_burgers_bounds)
+
+    if data_noise != 0:
+        U = percent_noise(U, data_noise)
+
+    layers = [2, 20, 20, 20, 20, 20, 20, 1]
+    nu = 0.01 / np.pi
+    model = Burgers(lower_bound, upper_bound, layers,
+                    nu, use_differential_points=False, add_grad_ops=True, session_config=config,
+                    df_multiplier=df_multiplier)
+
+    model.train_BFGS(X, U, None, True)
+    w0 = model.get_all_weights()
+
+    model_viz = Burgers_Viz(lower_bound, upper_bound, layers,
+                            nu, use_differential_points=False, add_grad_ops=True, session_config=config,
+                            df_multiplier=df_multiplier)
+
+    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+        model_viz, X, U, None, w0, 100, 50)
+    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
+        model_viz, X, U, None, w0, 250)
+
+    name = f"Burgers_Regularization_l{df_multiplier}_n{data_noise}"
+
+    fig, ax = plt.subplots()
+    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    ax.set_title("Hessian Eigenvalue Ratios (Burgers)")
+    fig.colorbar(pallet, ax=ax)
+    fig.savefig(f"{name}_hessians.png")
+
+    fig, ax = plt.subplots()
+    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    ax.set_title("Loss Surface (Burgers)")
+    fig.savefig(f"{name}_loss.png")
+
+    U_hat = model.predict(X_true)
+    error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
+
+    data = {
+        "t1s_hess": t1s_hess, "t2s_hess": t2s_hess, "ratios": ratios,
+        "t1s_loss": t1s_loss, "t2s_loss": t2s_loss, "loss_vals": loss_vals,
+        "rmse": error
+    }
+
+    with open(f"{name}_data.pkl", "wb+") as f:
+        pickle.dump(data, f)
+
+
+def Helmholtz_bounds(df_multiplier):
+    X_true, U_true, X, U, X_df, lower_bound, upper_bound = quick_setup_df(
+        load_helmholtz_bounds)
+
+    layers = [2, 20, 20, 20, 20, 20, 20, 1]
+    a = 1.0
+    b = 4.0
+    model = Helmholtz(lower_bound, upper_bound, layers,
+                      a, b, use_collocation_residual=False, add_grad_ops=True, session_config=config,
+                      df_multiplier=df_multiplier)
+
+    model.train_BFGS(X, U, X_df, True)
+    w0 = model.get_all_weights()
+
+    model_viz = Helmholtz_Viz(lower_bound, upper_bound, layers,
+                              a, b, use_collocation_residual=False, add_grad_ops=True, session_config=config,
+                              df_multiplier=df_multiplier)
+
+    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+        model_viz, X, U, X_df, w0, 100, 50)
+    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
+        model_viz, X, U, X_df, w0, 250)
+
+    name = f"Helmholtz_Bounds_l{df_multiplier}"
+
+    fig, ax = plt.subplots()
+    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    ax.set_title("Hessian Eigenvalue Ratios (Helmholtz)")
+    fig.colorbar(pallet, ax=ax)
+    fig.savefig(f"{name}_hessians.png")
+
+    fig, ax = plt.subplots()
+    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    ax.set_title("Loss Surface (Helmholtz)")
+    fig.savefig(f"{name}_loss.png")
+
+    U_hat = model.predict(X_true)
+    error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
+
+    data = {
+        "t1s_hess": t1s_hess, "t2s_hess": t2s_hess, "ratios": ratios,
+        "t1s_loss": t1s_loss, "t2s_loss": t2s_loss, "loss_vals": loss_vals,
+        "rmse": error
+    }
+
+    with open(f"{name}_data.pkl", "wb+") as f:
+        pickle.dump(data, f)
+
+
+def Helmholtz_regularization(data_noise, df_multiplier):
+    X_true, U_true, X, U, lower_bound, upper_bound = quick_setup(
+        load_helmholtz_bounds)
+
+    if data_noise != 0:
+        U = percent_noise(U, data_noise)
+
+    layers = [2, 20, 20, 20, 20, 20, 20, 1]
+    a = 1.0
+    b = 4.0
+    model = Helmholtz(lower_bound, upper_bound, layers,
+                      a, b, use_differential_points=False, add_grad_ops=True, session_config=config,
+                      df_multiplier=df_multiplier)
+
+    model.train_BFGS(X, U, None, True)
+    w0 = model.get_all_weights()
+
+    model_viz = Helmholtz_Viz(lower_bound, upper_bound, layers,
+                              a, b, use_differential_points=False, add_grad_ops=True, session_config=config,
+                              df_multiplier=df_multiplier)
+
+    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+        model_viz, X, U, None, w0, 100, 50)
+    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
+        model_viz, X, U, None, w0, 250)
+
+    name = f"Helmholtz_Regularization_l{df_multiplier}_n{data_noise}"
+
+    fig, ax = plt.subplots()
+    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    ax.set_title("Hessian Eigenvalue Ratios (Helmholtz)")
+    fig.colorbar(pallet, ax=ax)
+    fig.savefig(f"{name}_hessians.png")
+
+    fig, ax = plt.subplots()
+    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    ax.set_title("Loss Surface (Helmholtz)")
+    fig.savefig(f"{name}_loss.png")
+
+    U_hat = model.predict(X_true)
+    error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
+
+    data = {
+        "t1s_hess": t1s_hess, "t2s_hess": t2s_hess, "ratios": ratios,
+        "t1s_loss": t1s_loss, "t2s_loss": t2s_loss, "loss_vals": loss_vals,
+        "rmse": error
+    }
+
+    with open(f"{name}_data.pkl", "wb+") as f:
+        pickle.dump(data, f)
+
+
+if __name__ == "__main__":
+    a = int(sys.argv[1])
+
+    if a == 0:
+        Burgers_bounds(1.0)
+        Burgers_bounds(.1)
+        Burgers_bounds(.01)
+    if a == 1:
+        Helmholtz_bounds(1.0)
+        Helmholtz_bounds(1e-1)
+        Helmholtz_bounds(1e-2)
+    if a == 2:
+        Burgers_regularization(.1, 0)
+        Burgers_regularization(.1, 1e-3)
+        Burgers_regularization(.1, 1e-2)
+        Burgers_regularization(.1, 1e-1)
+        Burgers_regularization(.1, 1.0)
+    if a == 3:
+        Helmholtz_regularization(.1, 0)
+        Helmholtz_regularization(.1, 1e-3)
+        Helmholtz_regularization(.1, 1e-2)
+        Helmholtz_regularization(.1, 1e-1)
+        Helmholtz_regularization(.1, 1.0)
