@@ -5,7 +5,7 @@ from PINN_Survey.problems.helmholtz.data.load import load_helmholtz_bounds
 from PINN_Base.util import bounds_from_data, random_choice, random_choices, percent_noise
 from PINN_Survey.problems.burgers.v1 import Burgers
 from PINN_Survey.problems.helmholtz.v1 import Helmholtz
-from PINN_Survey.viz.loss_viz import viz_base, viz_2d_layer_norm, save_as_heightmap
+from PINN_Survey.viz.loss_viz import viz_base, viz_2d, save_as_heightmap
 from PINN_Survey.viz.hessian_viz import viz_hessian_eigenvalue_ratio
 import numpy as np
 import matplotlib.pyplot as plt
@@ -71,23 +71,23 @@ def Burgers_bounds(df_multiplier):
                             nu, use_collocation_residual=False, add_grad_ops=True, session_config=config,
                             df_multiplier=df_multiplier)
 
-    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+    t1s_hess, t2s_hess, ratios, (d1, d2), = viz_hessian_eigenvalue_ratio(
         model_viz, X, U, X_df, w0, 100, 50)
-    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
-        model_viz, X, U, X_df, w0, 250)
+    t1s_loss, t2s_loss, loss_vals = viz_2d(
+        model_viz, X, U, X_df, w0, d1, d2, 250)
 
     name = f"Burgers_Bounds_l{df_multiplier}"
 
-    fig, ax = plt.subplots()
-    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
-    ax.set_title("Hessian Eigenvalue Ratios (Burgers)")
-    fig.colorbar(pallet, ax=ax)
-    fig.savefig(f"{name}_hessians.png")
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+    fig.suptitle("Burgers Boundary (l={df_multiplier})")
 
-    fig, ax = plt.subplots()
-    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
-    ax.set_title("Loss Surface (Burgers)")
-    fig.savefig(f"{name}_loss.png")
+    pallet = axes[1].contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
+    fig.colorbar(pallet, ax=axes[1])
+
+    pallet = axes[0].contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    axes[0].set_title("log(loss)")
+    fig.savefig(f"{name}_hessians.png")
 
     U_hat = model.predict(X_true)
     error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
@@ -122,23 +122,23 @@ def Burgers_regularization(data_noise, df_multiplier):
                             nu, use_differential_points=False, add_grad_ops=True, session_config=config,
                             df_multiplier=df_multiplier)
 
-    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+    t1s_hess, t2s_hess, ratios, (d1, d2), = viz_hessian_eigenvalue_ratio(
         model_viz, X, U, None, w0, 100, 50)
-    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
-        model_viz, X, U, None, w0, 250)
+    t1s_loss, t2s_loss, loss_vals = viz_2d(
+        model_viz, X, U, None, w0, d1, d2, 250)
 
     name = f"Burgers_Regularization_l{df_multiplier}_n{data_noise}"
 
-    fig, ax = plt.subplots()
-    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
-    ax.set_title("Hessian Eigenvalue Ratios (Burgers)")
-    fig.colorbar(pallet, ax=ax)
-    fig.savefig(f"{name}_hessians.png")
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+    fig.suptitle("Burgers Noisy Sensor (l={df_multiplier})")
 
-    fig, ax = plt.subplots()
-    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
-    ax.set_title("Loss Surface (Burgers)")
-    fig.savefig(f"{name}_loss.png")
+    pallet = axes[1].contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
+    fig.colorbar(pallet, ax=axes[1])
+
+    pallet = axes[0].contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    axes[0].set_title("log(loss)")
+    fig.savefig(f"{name}_hessians.png")
 
     U_hat = model.predict(X_true)
     error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
@@ -171,23 +171,23 @@ def Helmholtz_bounds(df_multiplier):
                               a, b, use_collocation_residual=False, add_grad_ops=True, session_config=config,
                               df_multiplier=df_multiplier)
 
-    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+    t1s_hess, t2s_hess, ratios, (d1, d2), = viz_hessian_eigenvalue_ratio(
         model_viz, X, U, X_df, w0, 100, 50)
-    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
-        model_viz, X, U, X_df, w0, 250)
+    t1s_loss, t2s_loss, loss_vals = viz_2d(
+        model_viz, X, U, X_df, w0, d1, d2, 250)
 
     name = f"Helmholtz_Bounds_l{df_multiplier}"
 
-    fig, ax = plt.subplots()
-    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
-    ax.set_title("Hessian Eigenvalue Ratios (Helmholtz)")
-    fig.colorbar(pallet, ax=ax)
-    fig.savefig(f"{name}_hessians.png")
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+    fig.suptitle("Helmholtz Boundary (l={df_multiplier})")
 
-    fig, ax = plt.subplots()
-    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
-    ax.set_title("Loss Surface (Helmholtz)")
-    fig.savefig(f"{name}_loss.png")
+    pallet = axes[1].contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
+    fig.colorbar(pallet, ax=axes[1])
+
+    pallet = axes[0].contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    axes[0].set_title("log(loss)")
+    fig.savefig(f"{name}_hessians.png")
 
     U_hat = model.predict(X_true)
     error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
@@ -223,23 +223,24 @@ def Helmholtz_regularization(data_noise, df_multiplier):
                               a, b, use_differential_points=False, add_grad_ops=True, session_config=config,
                               df_multiplier=df_multiplier)
 
-    t1s_hess, t2s_hess, ratios = viz_hessian_eigenvalue_ratio(
+    t1s_hess, t2s_hess, ratios, (d1, d2), = viz_hessian_eigenvalue_ratio(
         model_viz, X, U, None, w0, 100, 50)
-    t1s_loss, t2s_loss, loss_vals = viz_2d_layer_norm(
-        model_viz, X, U, None, w0, 250)
+    t1s_loss, t2s_loss, loss_vals = viz_2d(
+        model_viz, X, U, None, w0, d1, d2, 250)
 
     name = f"Helmholtz_Regularization_l{df_multiplier}_n{data_noise}"
 
-    fig, ax = plt.subplots()
-    pallet = ax.contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
-    ax.set_title("Hessian Eigenvalue Ratios (Helmholtz)")
-    fig.colorbar(pallet, ax=ax)
-    fig.savefig(f"{name}_hessians.png")
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+    fig.suptitle("Helmholtz Noisy Sensor (l={df_multiplier})")
 
-    fig, ax = plt.subplots()
-    pallet = ax.contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
-    ax.set_title("Loss Surface (Helmholtz)")
-    fig.savefig(f"{name}_loss.png")
+    pallet = axes[1].contourf(
+        t1s_hess, t2s_hess, np.log(np.abs(ratios)), levels=30)
+    axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
+    fig.colorbar(pallet, ax=axes[1])
+
+    axes[0].contour(t1s_loss, t2s_loss, np.log(loss_vals), levels=30)
+    axes[0].set_title("log(loss)")
+    fig.savefig(f"{name}_hessians.png")
 
     U_hat = model.predict(X_true)
     error = np.sqrt(np.mean((U_true[:, 0] - U_hat[:, 0])**2))
@@ -267,13 +268,11 @@ if __name__ == "__main__":
         Helmholtz_bounds(1e-2)
     if a == 2:
         Burgers_regularization(.1, 0)
-        Burgers_regularization(.1, 1e-3)
         Burgers_regularization(.1, 1e-2)
         Burgers_regularization(.1, 1e-1)
         Burgers_regularization(.1, 1.0)
     if a == 3:
         Helmholtz_regularization(.1, 0)
-        Helmholtz_regularization(.1, 1e-3)
         Helmholtz_regularization(.1, 1e-2)
         Helmholtz_regularization(.1, 1e-1)
         Helmholtz_regularization(.1, 1.0)

@@ -1,6 +1,6 @@
 import numpy as np
 from enum import Enum
-from PINN_Survey.viz.loss_viz import weights_unit_vector, weights_unit_vector_layerwise, unwrap
+from PINN_Survey.viz.loss_viz import weights_unit_vector, weights_unit_vector_layerwise, unit_vectors_SVD, unwrap
 from scipy.linalg import eigvalsh_tridiagonal
 from tensorflow.keras.utils import Progbar
 
@@ -81,7 +81,7 @@ def lanczos_mat_free(matvec_fn, n, m, v_start=None, T_matrix=True):
 def viz_hessian_eigenvalue_ratio(
         model_viz, X, U, X_df, w0,
         lanczos_steps=100, grid_steps=50, weight_norm=Normalization.layer,
-        min_vals=[-1, -1], max_vals=[1, 1]):
+        min_vals=[-1, -1], max_vals=[1, 1], epoch_weights=None):
 
     n_params = unwrap(w0).shape[0]
 
@@ -92,7 +92,10 @@ def viz_hessian_eigenvalue_ratio(
         d1 = weights_unit_vector_layerwise(w0)
         d2 = weights_unit_vector_layerwise(w0)
     else:
-        raise NotImplementedError("Svd not yet implemted")
+        assert(epoch_weights is not None)
+        d1, d2, points, singular_values = unit_vectors_SVD(epoch_weights)
+        min_vals = np.min(points, axis=0) - 1.0
+        max_vals = np.max(points, axis=0) + 1.0
 
     t1s = np.linspace(min_vals[0], max_vals[0], grid_steps)
     t2s = np.linspace(min_vals[1], max_vals[1], grid_steps)
@@ -112,4 +115,7 @@ def viz_hessian_eigenvalue_ratio(
 
             progbar.update(i * grid_steps + j + 1)
 
-    return t1s, t2s, ratios
+    if weight_norm == Normalization.svd:
+        return t1s, t2s, ratios, (d1, d2), (points, singular_values)
+    else:
+        return t1s, t2s, ratios, (d1, d2)
