@@ -314,7 +314,7 @@ def Burgers_bounds_path(df_multiplier):
         pickle.dump(data, f)
 
 
-def Burgers_Regularization_path(data_noise, df_multiplier):
+def Burgers_regularization_path(data_noise, df_multiplier):
     X_true, U_true, X, U, lower_bound, upper_bound = quick_setup(
         load_burgers_bounds)
 
@@ -396,5 +396,10 @@ if __name__ == "__main__":
         Helmholtz_regularization(.1, 1.0)
     if a == 4:
         Burgers_bounds_path(1.0)
+        Burgers_bounds_path(.1)
+        Burgers_bounds_path(.01)
     if a == 5:
-        Burgers_Regularization_path(.1, 0)
+        Burgers_regularization_path(.1, 0)
+        Burgers_regularization_path(.1, 1e-2)
+        Burgers_regularization_path(.1, 1e-1)
+        Burgers_regularization_path(.1, 1.0)
