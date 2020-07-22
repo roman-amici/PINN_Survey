@@ -81,7 +81,8 @@ def Burgers_bounds(df_multiplier):
     fig, axes = plt.subplots(1, 2, figsize=(16, 5))
     fig.suptitle("Burgers Boundary (l={df_multiplier})")
 
-    pallet = axes[1].contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    pallet = axes[1].contourf(
+        t1s_hess, t2s_hess, np.log(np.abs(ratios)), levels=30)
     axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
     fig.colorbar(pallet, ax=axes[1])
 
@@ -132,7 +133,8 @@ def Burgers_regularization(data_noise, df_multiplier):
     fig, axes = plt.subplots(1, 2, figsize=(16, 5))
     fig.suptitle("Burgers Noisy Sensor (l={df_multiplier})")
 
-    pallet = axes[1].contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    pallet = axes[1].contourf(
+        t1s_hess, t2s_hess, np.log(np.abs(ratios)), levels=30)
     axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
     fig.colorbar(pallet, ax=axes[1])
 
@@ -181,7 +183,8 @@ def Helmholtz_bounds(df_multiplier):
     fig, axes = plt.subplots(1, 2, figsize=(16, 5))
     fig.suptitle("Helmholtz Boundary (l={df_multiplier})")
 
-    pallet = axes[1].contourf(t1s_hess, t2s_hess, np.abs(ratios), levels=30)
+    pallet = axes[1].contourf(
+        t1s_hess, t2s_hess, np.log(np.abs(ratios)), levels=30)
     axes[1].set_title("$log(|\\lambda_{min} / \\lambda_{max}|)$")
     fig.colorbar(pallet, ax=axes[1])
 
