@@ -9,146 +9,75 @@ import tensorflow as tf
 import numpy as np
 
 
-def q(self, X):
-    a = self.a
-    b = self.b
-    pi = np.pi
-    sin = tf.sin
+def HelmholtzResidual(base_class):
 
-    # We implicitly remove the k^2 sin(x)*sin(y) term since it cancels
-    # Otherwise we would essentially be leaking the solution in the differential equation
-    return -(a * pi)**2 * sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1]) - \
-        (b * pi)**2 * sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1]
-                                                  ) + sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1])
+    class HelmholtzWithResidual(base_class):
+        '''
+        This implements the residual for the particular solution 
+        sin(ax) * sin(by).
+        Consider making this an optional input parameter
+        for more general solutions to the helmholtz equation.
+        '''
+
+        def __init__(self, a, b, *args, **kwargs):
+            self.a = a
+            self.b = b
+            super().__init__(*args, **kwargs)
+
+        def q(self, X):
+            a = self.a
+            b = self.b
+            pi = np.pi
+            sin = tf.sin
+
+            return -(a * pi)**2 * sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1]) - \
+                (b * pi)**2 * sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1]
+                                                          ) + sin(a * pi * X[:, 0]) * sin(b * pi * X[:, 1])
+
+        def _residual(self, u, x, _=None):
+            du = tf.gradients(u, x)[0]
+
+            U_2x = tf.gradients(du[:, 0], x)[0]
+            U_2y = tf.gradients(du[:, 1], x)[0]
+
+            u_xx = U_2x[:, 0]
+            u_yy = U_2y[:, 1]
+
+            return u_xx + u_yy + u[:, 0] - self.q(x)
+
+    return HelmholtzWithResidual
 
 
-def residual(self, u, x):
-    du = tf.gradients(u, x)[0]
-
-    U_2x = tf.gradients(du[:, 0], x)[0]
-    U_2y = tf.gradients(du[:, 1], x)[0]
-
-    u_xx = U_2x[:, 0]
-    u_yy = U_2y[:, 1]
-
-    return u_xx + u_yy + u[:, 0] - q(self, x)
-
-
+@HelmholtzResidual
 class Helmholtz(PINN_Base):
-
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 layers,
-                 a, b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-        super().__init__(lower_bound, upper_bound, layers, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@HelmholtzResidual
 class Helmholtz_Soft_Mesh(Soft_Mesh):
-
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 layers_approx,
-                 layers_mesh,
-                 a, b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-
-        super().__init__(lower_bound, upper_bound, layers_approx, layers_mesh, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@HelmholtzResidual
 class Helmholtz_Domain_Transformer(Domain_Transformer):
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 width,
-                 depth,
-                 a,
-                 b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-        super().__init__(lower_bound, upper_bound, 2, 1, width, depth, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@HelmholtzResidual
 class Helmholtz_Sphere_Mesh(Sphere_Mesh):
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 layers_approx,
-                 layers_mesh,
-                 a, b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-
-        super().__init__(lower_bound, upper_bound, layers_approx, layers_mesh, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@HelmholtzResidual
 class Helmholtz_Sphere_Net(Sphere_Net):
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 layers,
-                 a, b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-        super().__init__(lower_bound, upper_bound, layers, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@HelmholtzResidual
 class Helmholtz_Siren(Siren):
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 layers,
-                 a, b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-        super().__init__(lower_bound, upper_bound, layers, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@HelmholtzResidual
 class Helmholtz_Random_Fourier(Random_Fourier):
-    def __init__(self,
-                 lower_bound,
-                 upper_bound,
-                 layers,
-                 a, b,
-                 **kwargs):
-
-        self.a = a
-        self.b = b
-        super().__init__(lower_bound, upper_bound, layers, **kwargs)
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass

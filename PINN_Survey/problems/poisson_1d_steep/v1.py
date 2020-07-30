@@ -5,36 +5,38 @@ import tensorflow as tf
 import numpy as np
 
 
-def f(self, X):
-    pi = np.pi
+def Poisson1DResidual(base_class):
 
-    t1 = -0.1*(8*pi)**2 * tf.sin(8*pi*X[:, 0])
-    t2 = 2*(80**2)*tf.tanh(80*X[:, 0]) * (1/tf.cosh(80*X[:, 0]))**2
+    class WithPoisson1DResidual(base_class):
+        def f(self, X):
+            pi = np.pi
 
-    return t1 - t2
+            t1 = -0.1 * (8 * pi)**2 * tf.sin(8 * pi * X[:, 0])
+            t2 = 2 * (80**2) * tf.tanh(80 *
+                                       X[:, 0]) * (1 / tf.cosh(80 * X[:, 0]))**2
+
+            return t1 - t2
+
+        def _residual(self, u, x, _=None):
+            u_x = tf.gradients(u, x)[0]
+
+            u_xx = tf.gradients(u_x[:, 0], x)[0]
+
+            return u_xx[:, 0] - self.f(x)
+
+    return WithPoisson1DResidual
 
 
-def residual(self, u, x):
-    u_x = tf.gradients(u, x)[0]
-
-    u_xx = tf.gradients(u_x[:, 0], x)[0]
-
-    return u_xx[:, 0] - f(self, x)
-
-
+@Poisson1DResidual
 class Poisson(PINN_Base):
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@Poisson1DResidual
 class Poisson_Soft_Mesh(Soft_Mesh):
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
 
 
+@Poisson1DResidual
 class Poisson_Domain_Transformer(Domain_Transformer):
-
-    def _residual(self, u, x, _=None):
-        return residual(self, u, x)
+    pass
