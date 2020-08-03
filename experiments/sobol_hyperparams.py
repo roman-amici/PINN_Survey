@@ -35,7 +35,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    coefs = run_test
+    coefs = run_test()
     print(coefs)
     with open("result.txt", "w+") as f:
         f.write(coefs.__str__())
