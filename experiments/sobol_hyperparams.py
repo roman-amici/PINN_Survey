@@ -29,7 +29,7 @@ def run_test():
         return model_train
 
     losses_A, losses_B, losses_AB = sobol_hyperparams(
-        model_constructor, X, U, X_df, n=100)
+        model_constructor, X, U, X_df, bounds_high=[60, 16, 1.0], n=25)
 
     return sobol_coefficients(losses_A, losses_B, losses_AB)
 
