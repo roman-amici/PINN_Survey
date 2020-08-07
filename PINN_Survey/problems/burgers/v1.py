@@ -1,15 +1,17 @@
+from PINN_Base.base_v1 import PINN_Base
 from PINN_Survey.architecture.tf_v1.soft_mesh import Soft_Mesh
 from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 from PINN_Survey.architecture.tf_v1.sphere_net import Sphere_Net
-from PINN_Survey.architecture.tf_v1.siren import Siren
-from PINN_Survey.architecture.tf_v1.random_fourier import Random_Fourier
-from PINN_Survey.architecture.tf_v1.resnet import PINN_Resnet
-import tensorflow as tf
 from PINN_Survey.architecture.tf_v1.domain_transformer import Domain_Transformer
-from PINN_Base.base_v1 import PINN_Base
+import tensorflow as tf
 
 
 def BurgersResidual(BaseClass):
+    '''
+    Decorate a class which inherits from PINN_Base
+    in order to train with differential regularization for the
+    Burgers Equation.
+    '''
 
     class BurgersWithResidual(BaseClass):
 
@@ -54,19 +56,4 @@ class Burgers_Sphere_Mesh(Sphere_Mesh):
 
 @BurgersResidual
 class Burgers_Sphere_Net(Sphere_Net):
-    pass
-
-
-@BurgersResidual
-class Burgers_Siren(PINN_Base):
-    pass
-
-
-@BurgersResidual
-class Burgers_Random_Fourier(Random_Fourier):
-    pass
-
-
-@BurgersResidual
-class Burgers_Resnet(PINN_Resnet):
     pass

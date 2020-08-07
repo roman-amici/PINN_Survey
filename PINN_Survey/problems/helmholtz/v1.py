@@ -10,6 +10,11 @@ import numpy as np
 
 
 def HelmholtzResidual(base_class):
+    '''
+    Decorate a class which inherits from PINN_Base
+    in order to train with differential regularization for the
+    Helmholtz Equation.
+    '''
 
     class HelmholtzWithResidual(base_class):
         '''

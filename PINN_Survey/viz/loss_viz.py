@@ -8,10 +8,20 @@ from PINN_Base import util
 
 
 def save_as_heightmap(fname, values):
+    '''
+    Save a grid of values as a greyscale image
+    readable by paraview.
+    '''
+
     imsave(fname, values)
 
 
 def linear_viz(model_viz, X, U, X_df, w0, w1, metric=None):
+    '''
+    Visualize the loss function by linearly interpolating between
+    w0 and w1.
+    '''
+
     fig, ax = plt.subplots()
 
     ts = np.linspace(-0.5, 1.5, 1000)
@@ -31,6 +41,16 @@ def linear_viz(model_viz, X, U, X_df, w0, w1, metric=None):
 
 
 def viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, metrics=None, min_vals=[-1, -1], max_vals=[1, 1]):
+    '''
+    Compute a grid of metric values by interpolating the two directions, (d1,d2)
+    using the formula
+    w0 + t_1*d1 + t_2*d2
+
+    If no metric is given, the "loss" metric will be used.
+
+    model_viz should be a PINN_vase model decorated with viz_base
+    '''
+
     t1s = np.linspace(min_vals[0], max_vals[0], n)
     t2s = np.linspace(min_vals[1], max_vals[1], n)
 
@@ -56,7 +76,23 @@ def viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, metrics=None, min_vals=[-1, -1]
         return t1s, t2s, metric_values
 
 
+def viz_2d_row_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
+    '''
+    Compute a grid of values using weight directions normalized by each
+    row in the weight matrix for each layer.
+    '''
+
+    d1 = weights_unit_vector_rowwise(w0)
+    d2 = weights_unit_vector_rowwise(w0)
+
+    return viz_2d(model_viz, X, U, X_df, w0, d1, d2, n, metrics)
+
+
 def viz_2d_global_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
+    '''
+    Compute a grid of values using weight directions normalized to be
+    unit vectors in the total weight space.
+    '''
 
     d1 = weights_unit_vector(w0)
     d2 = weights_unit_vector(w0)
@@ -65,6 +101,10 @@ def viz_2d_global_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
 
 
 def viz_2d_layer_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
+    '''
+    Compute a grid of values using weight directions normalized by the norm
+    of each weight matrix in a layer.
+    '''
 
     d1 = weights_unit_vector_layerwise(w0)
     d2 = weights_unit_vector_layerwise(w0)
@@ -73,6 +113,12 @@ def viz_2d_layer_norm(model_viz, X, U, X_df, w0, n=100, metrics=None):
 
 
 def make_contour_svd(ax, t1s, t2s, values, points, singular_values, levels=30):
+    '''
+    Construct a contour plot of the metric values with the
+    path taken by the optimizer in that path.
+
+    Use in conjunction with viz_2d_svd to get appropriate values.
+    '''
 
     sv = singular_values**2 / (np.sum(singular_values**2))
     sv_1 = sv[0] * 100
@@ -89,6 +135,14 @@ def make_contour_svd(ax, t1s, t2s, values, points, singular_values, levels=30):
 
 
 def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, metrics=None):
+    '''
+    Used to visualize the trajectory of training in terms of the given loss metrics.
+
+    Parameters:
+        epoch_weights - A list of weight values at each training epoch.
+
+    '''
+
     d1, d2, points, singular_values = unit_vectors_SVD(epoch_weights)
 
     min_vals = np.min(points, axis=0) - 1.0
@@ -101,11 +155,18 @@ def viz_2d_svd(model_viz, X, U, X_df, w0, epoch_weights, n=100, metrics=None):
 
 
 def unit_vectors_SVD(epoch_weights):
+    '''
+    Uses the top two singular vectors built from the matrix of (relative)
+    descent directions.
+    '''
 
     assert(len(epoch_weights) > 1)
     wn = epoch_weights[-1]
     un = unwrap(wn)
 
+    # Construct a matrix of relative descent directions relative to the
+    # final vector of weights. I.e. each row is
+    # w_i - w_final
     epoch_matrix = np.empty((len(epoch_weights) - 1, len(un)))
 
     for i in range(epoch_matrix.shape[0]):
@@ -115,6 +176,7 @@ def unit_vectors_SVD(epoch_weights):
         delta = u1 - un
         epoch_matrix[i, :] = delta[:]
 
+    # Take the top two singular values
     _, singular_vals, V = np.linalg.svd(epoch_matrix)
     assert(V.shape[1] == un.shape[0])
 
@@ -124,10 +186,12 @@ def unit_vectors_SVD(epoch_weights):
     t1 = un @ v1
     t2 = un @ v2
 
+    # Project the weight values onto the descent directions
     points = np.empty((len(epoch_weights), 2))
     for r in range(len(epoch_weights)):
         w1 = epoch_weights[r]
         u1 = unwrap(w1)
+        # We need to subtract the projection onto w_final to fix the origin to be w_final.
         points[r, 0] = (u1 @ v1) - t1
         points[r, 1] = (u1 @ v2) - t2
 
@@ -135,6 +199,11 @@ def unit_vectors_SVD(epoch_weights):
 
 
 def weights_unit_vector(w0):
+    '''
+    Construct a unit vector with the same (unwrapped and the rewrapped)
+    shape as w0
+    '''
+
     w_d = []
     length = 0
     for collection in w0:
@@ -152,7 +221,40 @@ def weights_unit_vector(w0):
     return [[w / length for w in collection] for collection in w_d]
 
 
+def weights_unit_vector_rowwise(w0):
+    '''
+    Construct a direction vector with the same shape as w0.
+    Each 'row' in each weight matrix of each layer is rescaled
+    so that it has the same magnitude as the same row in w0.
+    '''
+
+    w_d = []
+    for collection in w0:
+        layers = []
+        for w_l in collection:
+            w_new = np.empty_like(w_l)
+
+            for row in range(w_new.shape[0]):
+                w = np.random.normal(size=w_l.shape[1])
+
+                norm_w0 = np.linalg.norm(w_l[row, :])
+                norm_w1 = np.linalg.norm(w)
+
+                w = (w / norm_w1) * norm_w0
+                w_new[row, :] = w
+
+            layers.append(w_new)
+        w_d.append(layers)
+
+    return w_d
+
+
 def weights_unit_vector_layerwise(w0):
+    '''
+    Construct a direction vector with the same shape as w0.
+    Each  weight matrix of each layer is rescaled
+    so that it has the same Frobenious as the same matrix in w0.
+    '''
 
     w_d = []
     for collection in w0:
@@ -174,6 +276,14 @@ def weights_unit_vector_layerwise(w0):
 
 
 def unwrap(w0):
+    '''
+    Weights returned from get_all_weights() is a list of list of matrices.
+    The first list is a list of weight categories. For PINN_Base this weights and biases.
+    Each of these contains a list of matrices corresponding to a neural network layer.
+
+    This function flattens this list of list of matrices into a single, flat array
+    '''
+
     flats = []
 
     for collection in w0:
@@ -185,6 +295,10 @@ def unwrap(w0):
 
 
 def wrap(flat_array, w0):
+    '''
+    Wraps the given 1D array to have the same list of list of 
+    matrices structure as w0.
+    '''
 
     start = 0
     w1 = []
@@ -204,10 +318,20 @@ def wrap(flat_array, w0):
 
 
 def viz_base(cls):
+    '''
+    A decorator to add visualization functionality to a PINN Model.
+    This version of the model cannot be trained; instead weights are
+    passed in as a parameter in sess.run calls.
+    '''
 
     class viz_base_class(cls):
 
         def _init_NN_placeholder(self, layers):
+            '''
+            Instead of being a tf.Variable, we make these tf.Placeholders
+            so that we can specify weight values at runtime.
+            '''
+
             weights = []
             biases = []
             for l in range(len(layers) - 1):
@@ -223,11 +347,14 @@ def viz_base(cls):
             self.weights, self.biases = self._init_NN_placeholder(self.layers)
 
         def _init_optimizers(self):
-            # Since there are no optimizers
+            # Since there are no variables, there are no optimizers
             pass
 
         @staticmethod
         def linear_interpolate_weights(w0, w1, t):
+            '''
+            Compute (1-t) * w0 + t * w1 and return the result.
+            '''
 
             assert(len(w0) == len(w1))
             w_t = []
@@ -245,7 +372,9 @@ def viz_base(cls):
 
         @staticmethod
         def scale_weights_2d(w0, d1, d2, t1, t2):
-            # TODO: allow for n-d visualization?
+            '''
+            Compute w0 + t1 * d1 + t2 * d2 and return the result.
+            '''
 
             w_t = []
             for c0, c1, c2 in zip(w0, d1, d2):
@@ -308,6 +437,11 @@ def viz_base(cls):
             return self.run_with_weights(X, U, X_df, w_t, metrics)
 
         def matvec_with_weights(self, v, X, U, X_df, w_t):
+            '''
+            Perform a Hessian matrix vector mutliply Hv but with
+            weights specified with w_t rather than being variables.
+            '''
+
             input_dict = self.get_input_dict(X, U, X_df)
             input_dict[self.hessian_vector] = v
 
@@ -322,6 +456,11 @@ def viz_base(cls):
             return util.unwrap(self.sess.run(self.hessian_matvec, feed_dict))
 
         def make_matvec_fn_with_weights(self, X, U, X_df, w0, d1, d2, t1, t2):
+            '''
+            Creates a closure which encapsulates the Hessian matvec operation
+            which can be passed to a generic Lanczos iteration algorithm
+            '''
+
             w_t = self.scale_weights_2d(w0, d1, d2, t1, t2)
 
             def matvec_fn(v):
@@ -330,6 +469,10 @@ def viz_base(cls):
             return matvec_fn
 
     return viz_base_class
+
+# Each architecture has a slightly different set of params
+# and thus needs its own class to convert it to params.
+# Consider during this into a property of the architectures themselves.
 
 
 def viz_mesh(cls):

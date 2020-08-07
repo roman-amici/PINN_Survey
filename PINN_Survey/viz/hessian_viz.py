@@ -1,6 +1,6 @@
 import numpy as np
 from enum import Enum
-from PINN_Survey.viz.loss_viz import weights_unit_vector, weights_unit_vector_layerwise, unit_vectors_SVD, unwrap
+from PINN_Survey.viz.loss_viz import weights_unit_vector, weights_unit_vector_layerwise, unit_vectors_SVD, weights_unit_vector_rowwise, unwrap
 from scipy.linalg import eigvalsh_tridiagonal
 from tensorflow.keras.utils import Progbar
 
@@ -9,9 +9,14 @@ class Normalization(Enum):
     unit = 0
     layer = 1,
     svd = 2,
+    row = 3,
 
 
 def make_T(alphas, betas):
+    '''
+    Transform a list of tridiagonal entries into a square matrix.
+    '''
+
     m = len(alphas)
     T = np.zeros((m, m))
     T[0, 0] = alphas[0]
@@ -29,6 +34,11 @@ def make_T(alphas, betas):
 
 
 def reorthogonalize(vs, w):
+    '''
+    Use grahm-schmidt to compute a vector orthogonal
+    to the given unit vectors, vs
+    '''
+
     for v in vs:
         w = w - ((w.T @ v) * v)
 
@@ -41,6 +51,16 @@ def random_unit_vector(size):
 
 
 def lanczos_mat_free(matvec_fn, n, m, v_start=None, T_matrix=True):
+    '''
+    Matrix free Lanczos iteration algorithm.
+    I don't do any tricks for better numerical stability
+    so don't be too surprised if it fails when n gets too high...
+
+    Parameters:
+        matvec_fn - A function f(v) which multiplies v by the problem's matrix
+        v_start - Starting vector. A random unit vector will be used if this is None.
+        T_matrix - Whether to assemble the tri-diagonal entries into a square matrix.
+    '''
 
     if v_start is None:
         v = random_unit_vector(n)
@@ -59,6 +79,7 @@ def lanczos_mat_free(matvec_fn, n, m, v_start=None, T_matrix=True):
     for i in range(1, m):
         beta = np.linalg.norm(w)
         if beta < 1e-6:
+            # I've never seen this get called so YMMV
             print("Beta is zero, getting a new vector")
             v = reorthogonalize(vs, random_unit_vector(n))
         else:
@@ -82,6 +103,12 @@ def viz_hessian_eigenvalue_ratio(
         model_viz, X, U, X_df, w0,
         lanczos_steps=100, grid_steps=50, weight_norm=Normalization.layer,
         min_vals=[-1, -1], max_vals=[1, 1], epoch_weights=None):
+    '''
+    Computes a grid in weight space where each cell holds
+    lambda_min / lambda_max. Here lambdas are the eigenvalues
+    of the hessian for the given model. Eigenvalues are computed
+    using Lanczos iteration.
+    '''
 
     n_params = unwrap(w0).shape[0]
 
@@ -91,6 +118,9 @@ def viz_hessian_eigenvalue_ratio(
     elif weight_norm == Normalization.layer:
         d1 = weights_unit_vector_layerwise(w0)
         d2 = weights_unit_vector_layerwise(w0)
+    elif weight_norm == Normalization.row:
+        d1 = weights_unit_vector_rowwise(w0)
+        d2 = weights_unit_vector_rowwise(w0)
     else:
         assert(epoch_weights is not None)
         d1, d2, points, singular_values = unit_vectors_SVD(epoch_weights)

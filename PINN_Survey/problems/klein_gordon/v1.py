@@ -7,6 +7,11 @@ import numpy as np
 
 
 def KleinGordonResidual(base_class):
+    '''
+    Decorate a class which inherits from PINN_Base
+    in order to train with differential regularization for the
+    Klein-Gordon Equation.
+    '''
 
     class WithKGResidual(base_class):
         '''

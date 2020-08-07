@@ -5,6 +5,11 @@ from PINN_Survey.architecture.tf_v1.sphere_mesh import Sphere_Mesh
 
 
 def MakeSHM(base_class):
+    '''
+    Decorate a class which inherits from PINN_Base
+    in order to train with differential regularization for the
+    Simple Harmonic Motion.
+    '''
 
     class WithSHM(base_class):
 

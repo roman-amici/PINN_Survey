@@ -7,6 +7,11 @@ import tensorflow as tf
 
 
 def LaplaceResidual(base_class):
+    '''
+    Decorate a class which inherits from PINN_Base
+    in order to train with differential regularization for
+    Laplace's Equation.
+    '''
 
     class WithLaplaceResidual(base_class):
 

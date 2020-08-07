@@ -6,6 +6,11 @@ import numpy as np
 
 
 def Poisson1DResidual(base_class):
+    '''
+    Decorate a class which inherits from PINN_Base
+    in order to train with differential regularization for
+    Poisson's quation in 1D.
+    '''
 
     class WithPoisson1DResidual(base_class):
         def f(self, X):
