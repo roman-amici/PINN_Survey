@@ -29,13 +29,13 @@ def black_scholes(optimizer="Adam", data_source="black_scholes", reg=1.0):
 
     lower_bound, upper_bound = bounds_from_data(X_train)
 
-    layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
-    model = BlackScholes_Viz(lower_bound, upper_bound,
-                             layers, use_differential_points=False, session_config=config, df_multiplier=reg)
+    layers = [4, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+    model = BlackScholesSurrogate(lower_bound, upper_bound,
+                                  layers, use_differential_points=False, session_config=config, df_multiplier=reg)
 
     if optimizer == "Adam":
         model.train_Adam_batched(
-            X_train, U_train, None, batch_size=64, epochs=20)
+            X_train, U_train, None, batch_size=64, epochs=10)
     else:
         model.train_BFGS(X_train, U_train, None, True)
 
@@ -43,13 +43,13 @@ def black_scholes(optimizer="Adam", data_source="black_scholes", reg=1.0):
     model_viz = BlackScholes_Viz(
         lower_bound, upper_bound, layers, use_differential_points=False, session_config=config, df_multiplier=reg)
 
-    _, _, [_, _, loss] = viz_2d_layer_norm(
+    _, _, loss = viz_2d_layer_norm(
         model_viz, X_train, U_train, None, w0, 512)
 
     save_as_heightmap(
         f"black_scholes_train_{optimizer}_{reg}.png", np.log(loss))
 
-    _, _, [_, _, loss] = viz_2d_layer_norm(
+    _, _, loss = viz_2d_layer_norm(
         model_viz, X_test, U_test, None, w0, 512)
 
     save_as_heightmap(
